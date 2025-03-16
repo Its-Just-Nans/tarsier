@@ -259,6 +259,20 @@ impl eframe::App for TarsierApp {
                         );
                     }
                 });
+                ui.separator();
+                if let Some(selection) = self.selection {
+                    if ui
+                        .label(format!(
+                            "Selection: {}x{}",
+                            (selection[1].x - selection[0].x).abs() as u32,
+                            (selection[1].y - selection[0].y).abs() as u32
+                        ))
+                        .on_hover_text("Click to clear selection")
+                        .clicked()
+                    {
+                        self.selection = None;
+                    }
+                }
             });
         });
 
@@ -362,7 +376,6 @@ impl eframe::App for TarsierApp {
             ui.heading("Image Info");
             ui.label(format!("Size: {}x{}", self.img.width(), self.img.height()));
             ui.label(format!("Format: {:?}", self.img.color()));
-            ui.label(format!("Selection: {:?}", self.selection));
 
             ui.separator();
             ui.add(
