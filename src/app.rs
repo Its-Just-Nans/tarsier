@@ -25,7 +25,10 @@ pub struct TarsierApp {
     base_img: image::DynamicImage,
 
     #[serde(skip)]
-    selection: Option<[Pos2; 2]>,
+    selection: Option<egui::Rect>,
+
+    #[serde(skip)]
+    start_selection: Pos2,
 
     #[serde(skip)]
     is_selecting: bool,
@@ -57,6 +60,7 @@ impl Default for TarsierApp {
             img,
             img_position: egui::Rect::ZERO,
             selection: None,
+            start_selection: Pos2::ZERO,
             is_selecting: false,
             image_operations: Default::default(),
             save_path: None,
@@ -176,8 +180,8 @@ impl eframe::App for TarsierApp {
                     .clicked()
                 {
                     if let Some(selection) = self.selection {
-                        let min_pos = selection[0];
-                        let max_pos = selection[1];
+                        let min_pos = selection.min;
+                        let max_pos = selection.max;
                         let min_x = min_pos.x as u32;
                         let min_y = min_pos.y as u32;
                         let max_x = max_pos.x as u32;
@@ -264,8 +268,8 @@ impl eframe::App for TarsierApp {
                     if ui
                         .label(format!(
                             "Selection: {}x{}",
-                            (selection[1].x - selection[0].x).abs() as u32,
-                            (selection[1].y - selection[0].y).abs() as u32
+                            (selection.max.x - selection.min.x).abs() as u32,
+                            (selection.max.y - selection.min.y).abs() as u32
                         ))
                         .on_hover_text("Click to clear selection")
                         .clicked()
@@ -310,8 +314,13 @@ impl eframe::App for TarsierApp {
                         ),
                     );
                     self.selection = match self.selection {
-                        Some(rect) => Some([rect[0], correct_pos]),
-                        None => Some([correct_pos, correct_pos]),
+                        Some(_rect) => {
+                            Some(egui::Rect::from_two_pos(self.start_selection, correct_pos))
+                        }
+                        None => {
+                            self.start_selection = correct_pos;
+                            Some(egui::Rect::from_two_pos(correct_pos, correct_pos))
+                        }
                     };
                     self.is_selecting = true;
                 }
@@ -323,7 +332,7 @@ impl eframe::App for TarsierApp {
             }
             if let Some(selection) = self.selection {
                 let min_pos = self.img_position.min;
-                let rect_selection = egui::Rect::from_two_pos(selection[0], selection[1]);
+                let rect_selection = selection;
                 painter.rect_stroke(
                     rect_selection,
                     0.0,
@@ -387,10 +396,10 @@ impl eframe::App for TarsierApp {
             if ui.button("Blur").clicked() {
                 match self.selection {
                     Some(selection) => {
-                        let min_x = selection[0].x as u32 - self.img_position.min.x as u32;
-                        let min_y = selection[0].y as u32 - self.img_position.min.y as u32;
-                        let max_x = selection[1].x as u32 - self.img_position.min.x as u32;
-                        let max_y = selection[1].y as u32 - self.img_position.min.y as u32;
+                        let min_x = selection.min.x as u32 - self.img_position.min.x as u32;
+                        let min_y = selection.min.y as u32 - self.img_position.min.y as u32;
+                        let max_x = selection.max.x as u32 - self.img_position.min.x as u32;
+                        let max_y = selection.max.y as u32 - self.img_position.min.y as u32;
                         let cropped_img = self.img.crop(min_x, min_y, max_x - min_x, max_y - min_y);
                         let inner_mut = cropped_img.blur(self.image_operations.blur);
                         self.img.copy_from(&inner_mut, min_x, min_y).unwrap();
@@ -404,10 +413,10 @@ impl eframe::App for TarsierApp {
             if ui.button("Grayscale").clicked() {
                 match self.selection {
                     Some(selection) => {
-                        let min_x = selection[0].x as u32 - self.img_position.min.x as u32;
-                        let min_y = selection[0].y as u32 - self.img_position.min.y as u32;
-                        let max_x = selection[1].x as u32 - self.img_position.min.x as u32;
-                        let max_y = selection[1].y as u32 - self.img_position.min.y as u32;
+                        let min_x = selection.min.x as u32 - self.img_position.min.x as u32;
+                        let min_y = selection.min.y as u32 - self.img_position.min.y as u32;
+                        let max_x = selection.max.x as u32 - self.img_position.min.x as u32;
+                        let max_y = selection.max.y as u32 - self.img_position.min.y as u32;
                         let cropped_img = self.img.crop(min_x, min_y, max_x - min_x, max_y - min_y);
                         let inner_mut = cropped_img.grayscale();
                         self.img.copy_from(&inner_mut, min_x, min_y).unwrap();
@@ -421,10 +430,10 @@ impl eframe::App for TarsierApp {
             if ui.button("invert").clicked() {
                 match self.selection {
                     Some(selection) => {
-                        let min_x = selection[0].x as u32 - self.img_position.min.x as u32;
-                        let min_y = selection[0].y as u32 - self.img_position.min.y as u32;
-                        let max_x = selection[1].x as u32 - self.img_position.min.x as u32;
-                        let max_y = selection[1].y as u32 - self.img_position.min.y as u32;
+                        let min_x = selection.min.x as u32 - self.img_position.min.x as u32;
+                        let min_y = selection.min.y as u32 - self.img_position.min.y as u32;
+                        let max_x = selection.max.x as u32 - self.img_position.min.x as u32;
+                        let max_y = selection.max.y as u32 - self.img_position.min.y as u32;
                         let mut cropped_img =
                             self.img.crop(min_x, min_y, max_x - min_x, max_y - min_y);
                         cropped_img.invert();
@@ -444,10 +453,10 @@ impl eframe::App for TarsierApp {
             if ui.button("hue rotate").clicked() {
                 match self.selection {
                     Some(selection) => {
-                        let min_x = selection[0].x as u32 - self.img_position.min.x as u32;
-                        let min_y = selection[0].y as u32 - self.img_position.min.y as u32;
-                        let max_x = selection[1].x as u32 - self.img_position.min.x as u32;
-                        let max_y = selection[1].y as u32 - self.img_position.min.y as u32;
+                        let min_x = selection.min.x as u32 - self.img_position.min.x as u32;
+                        let min_y = selection.min.y as u32 - self.img_position.min.y as u32;
+                        let max_x = selection.max.x as u32 - self.img_position.min.x as u32;
+                        let max_y = selection.max.y as u32 - self.img_position.min.y as u32;
                         let cropped_img = self.img.crop(min_x, min_y, max_x - min_x, max_y - min_y);
                         let inner = cropped_img.huerotate(self.image_operations.hue_rotation);
                         self.img.copy_from(&inner, min_x, min_y).unwrap();
