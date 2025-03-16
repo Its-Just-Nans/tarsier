@@ -149,6 +149,8 @@ jobs:
     - name: Build
       run: |
         cross build --verbose --release --target=${{ matrix.TARGET }}
+      env:
+        CROSS_NO_WARNINGS: 0
 
     - name: Rename
       run: cp target/${{ matrix.TARGET }}/release/${{ github.event.repository.name }}${{ matrix.EXTENSION }} ${{ github.event.repository.name }}-${{ matrix.TARGET }}${{ matrix.EXTENSION }}
