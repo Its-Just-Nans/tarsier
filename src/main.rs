@@ -18,7 +18,7 @@ fn main() -> eframe::Result {
         ..Default::default()
     };
     eframe::run_native(
-        "eframe template",
+        "tarsier",
         native_options,
         Box::new(|cc| Ok(Box::new(tarsier::TarsierApp::new(cc)))),
     )
@@ -64,7 +64,7 @@ fn main() {
                     loading_text.set_inner_html(
                         "<p> The app has crashed. See the developer console for details. </p>",
                     );
-                    panic!("Failed to start eframe: {e:?}");
+                    panic!("Failed to start tarsier: {e:?}");
                 }
             }
         }

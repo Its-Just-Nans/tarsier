@@ -1,22 +1,25 @@
-use std::{io::Cursor, sync::Arc};
+use std::{io::Cursor, path::PathBuf, sync::Arc};
 
-use egui::{load::SizedTexture, ColorImage, Image, ImageData, Pos2, Sense, TextureOptions};
-use image::ImageReader;
+use egui::{
+    load::SizedTexture, ColorImage, Image, ImageData, ImageSource, Pos2, Sense, TextureOptions,
+};
+use image::{GenericImage, ImageReader};
+
+#[derive(serde::Deserialize, serde::Serialize, Default)]
+struct ImageOperations {
+    blur: f32,
+    hue_rotation: i32,
+}
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct TarsierApp {
-    // Example stuff:
-    label: String,
-
-    #[serde(skip)] // This how you opt-out of serialization of a field
-    value: f32,
-
-    scene_rect: egui::Rect,
-
     #[serde(skip)]
     img: image::DynamicImage,
+
+    #[serde(skip)]
+    img_position: egui::Rect,
 
     #[serde(skip)]
     base_img: image::DynamicImage,
@@ -26,9 +29,20 @@ pub struct TarsierApp {
 
     #[serde(skip)]
     is_selecting: bool,
+
+    image_operations: ImageOperations,
+
+    save_path: Option<PathBuf>,
 }
 
 const ASSET: &[u8] = include_bytes!("../assets/icon-1024.png");
+
+const CROP_ICON: ImageSource<'_> = egui::include_image!("../assets/crop.png");
+const RESET_ICON: ImageSource<'_> = egui::include_image!("../assets/x-circle.png");
+const ROTATE_CCW_ICON: ImageSource<'_> = egui::include_image!("../assets/rotate_ccw.png");
+const ROTATE_CW_ICON: ImageSource<'_> = egui::include_image!("../assets/rotate_cw.png");
+const FLIP_H_ICON: ImageSource<'_> = egui::include_image!("../assets/flip_h.png");
+const FLIP_V_ICON: ImageSource<'_> = egui::include_image!("../assets/flip_v.png");
 
 impl Default for TarsierApp {
     fn default() -> Self {
@@ -39,14 +53,13 @@ impl Default for TarsierApp {
             .unwrap();
 
         Self {
-            // Example stuff:
-            label: "Hello World!".to_owned(),
-            value: 2.7,
-            scene_rect: egui::Rect::NAN,
             base_img: img.clone(),
             img,
+            img_position: egui::Rect::ZERO,
             selection: None,
             is_selecting: false,
+            image_operations: Default::default(),
+            save_path: None,
         }
     }
 }
@@ -56,7 +69,7 @@ impl TarsierApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         // This is also where you can customize the look and feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
-
+        egui_extras::install_image_loaders(&cc.egui_ctx);
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
         if let Some(storage) = cc.storage {
@@ -67,26 +80,28 @@ impl TarsierApp {
     }
 }
 
-fn save_image(img: &image::DynamicImage, format: image::ImageFormat, filename: &str) {
+fn save_image(img: &image::DynamicImage, format: image::ImageFormat, path_file: &PathBuf) {
     let mut bytes: Vec<u8> = Vec::new();
     img.write_to(&mut Cursor::new(&mut bytes), format).unwrap();
-    save_file(&bytes, filename);
+    save_file(&bytes, path_file);
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-fn save_file(data: &[u8], filename: &str) {
+fn save_file(data: &[u8], path_file: &PathBuf) {
     use std::fs::File;
     use std::io::prelude::*;
 
-    let mut file = File::create(filename).unwrap();
+    let mut file = File::create(path_file).unwrap();
     file.write_all(data).unwrap();
 }
 
 #[cfg(target_arch = "wasm32")]
-fn save_file(data: &[u8], filename: &str) {
+fn save_file(data: &[u8], path_file: &PathBuf) {
     // create blob
     use eframe::wasm_bindgen::JsCast;
     use js_sys::Array;
+
+    let filename = path_file.file_name().unwrap().to_str().unwrap();
 
     let array_data = Array::new();
     array_data.push(&js_sys::Uint8Array::from(data));
@@ -101,6 +116,29 @@ fn save_file(data: &[u8], filename: &str) {
     a.dyn_ref::<web_sys::HtmlElement>().unwrap().click();
     // revoke url
     web_sys::Url::revoke_object_url(&url).unwrap();
+}
+
+impl TarsierApp {
+    #[cfg(not(target_arch = "wasm32"))]
+    fn get_save_path(&mut self) -> std::path::PathBuf {
+        use rfd::FileDialog;
+        let path = FileDialog::new()
+            .set_directory(match &self.save_path {
+                Some(path) => path,
+                None => std::path::Path::new("."),
+            })
+            .pick_folder();
+        if let Some(path) = path {
+            self.save_path = Some(path.clone());
+            path
+        } else {
+            std::path::PathBuf::new()
+        }
+    }
+    #[cfg(target_arch = "wasm32")]
+    fn get_save_path(&mut self) -> std::path::PathBuf {
+        std::path::PathBuf::new()
+    }
 }
 
 impl eframe::App for TarsierApp {
@@ -132,7 +170,8 @@ impl eframe::App for TarsierApp {
                 });
                 ui.separator();
                 if ui
-                    .add_enabled(self.selection.is_some(), egui::Button::new("Crop"))
+                    .add_enabled(self.selection.is_some(), egui::Button::image(CROP_ICON))
+                    .on_disabled_hover_text("You first need to select an area to crop")
                     .on_hover_text("Crop the image")
                     .clicked()
                 {
@@ -143,48 +182,87 @@ impl eframe::App for TarsierApp {
                         let min_y = min_pos.y as u32;
                         let max_x = max_pos.x as u32;
                         let max_y = max_pos.y as u32;
-                        let cropped_img = self.img.crop(min_x, min_y, max_x - min_x, max_y - min_y);
+                        let cropped_img =
+                            self.img
+                                .crop_imm(min_x, min_y, max_x - min_x, max_y - min_y);
                         self.img = cropped_img;
                         self.selection = None;
                     }
                 }
-                if ui.button("reset").clicked() {
+                if ui
+                    .add(egui::Button::image(RESET_ICON))
+                    .on_hover_text("Reset the image")
+                    .clicked()
+                {
                     self.img = self.base_img.clone();
                     self.selection = None;
                 }
-                if ui.button("rotate").clicked() {
+                if ui
+                    .add(egui::Button::image(ROTATE_CW_ICON))
+                    .on_hover_text("Rotate 90 degrees clockwise")
+                    .clicked()
+                {
                     self.img = self.img.rotate90();
                 }
-                if ui.button("rotate inv").clicked() {
+                if ui
+                    .add(egui::Button::image(ROTATE_CCW_ICON))
+                    .on_hover_text("Rotate 90 degrees counter-clockwise")
+                    .clicked()
+                {
                     self.img = self.img.rotate270();
                 }
-                if ui.button("flip h").clicked() {
+                if ui
+                    .add(egui::Button::image(FLIP_H_ICON))
+                    .on_hover_text("Flip horizontally")
+                    .clicked()
+                {
                     self.img = self.img.fliph();
                 }
-                if ui.button("flip v").clicked() {
+                if ui
+                    .add(egui::Button::image(FLIP_V_ICON))
+                    .on_hover_text("Flip vertically")
+                    .clicked()
+                {
                     self.img = self.img.flipv();
                 }
                 ui.menu_button("Save", |ui| {
                     if ui.button("PNG").clicked() {
-                        save_image(&self.img, image::ImageFormat::Png, "image.png");
+                        let save_path = self.get_save_path();
+                        save_image(
+                            &self.img,
+                            image::ImageFormat::Png,
+                            &save_path.join("image.png"),
+                        );
                     }
                     if ui.button("JPEG").clicked() {
-                        save_image(&self.img, image::ImageFormat::Jpeg, "image.jpg");
+                        let save_path = self.get_save_path();
+                        save_image(
+                            &self.img,
+                            image::ImageFormat::Jpeg,
+                            &save_path.join("image.jpg"),
+                        );
                     }
                     if ui.button("BMP").clicked() {
-                        save_image(&self.img, image::ImageFormat::Bmp, "image.bmp");
+                        let save_path = self.get_save_path();
+                        save_image(
+                            &self.img,
+                            image::ImageFormat::Bmp,
+                            &save_path.join("image.bmp"),
+                        );
                     }
                     if ui.button("GIF").clicked() {
-                        save_image(&self.img, image::ImageFormat::Gif, "image.gif");
+                        let save_path = self.get_save_path();
+                        save_image(
+                            &self.img,
+                            image::ImageFormat::Gif,
+                            &save_path.join("image.gif"),
+                        );
                     }
                 });
             });
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            // The central panel the region left after adding TopPanel's and SidePanel's
-            ui.heading("eframe template");
-
             let size = [self.img.width() as _, self.img.height() as _];
             let image_buffer = self.img.to_rgba8();
             let pixels = image_buffer.as_flat_samples();
@@ -199,7 +277,7 @@ impl eframe::App for TarsierApp {
             let sized_texture = SizedTexture::from_handle(&svg_texture);
 
             let response = ui.add(Image::new(sized_texture).sense(Sense::click_and_drag()));
-            let img_pos_rect = response.rect;
+            self.img_position = response.rect;
 
             let painter = ui.painter();
             if response.dragged() {
@@ -207,9 +285,19 @@ impl eframe::App for TarsierApp {
                     if !self.is_selecting {
                         self.selection = None;
                     }
+                    let correct_pos = Pos2::new(
+                        pos.x.clamp(
+                            0.0 + self.img_position.min.x,
+                            size[0] as f32 + self.img_position.min.x,
+                        ),
+                        pos.y.clamp(
+                            0.0 + self.img_position.min.y,
+                            size[1] as f32 + self.img_position.min.y,
+                        ),
+                    );
                     self.selection = match self.selection {
-                        Some(rect) => Some([rect[0], pos]),
-                        None => Some([pos, pos]),
+                        Some(rect) => Some([rect[0], correct_pos]),
+                        None => Some([correct_pos, correct_pos]),
                     };
                     self.is_selecting = true;
                 }
@@ -220,7 +308,7 @@ impl eframe::App for TarsierApp {
                 self.selection = None;
             }
             if let Some(selection) = self.selection {
-                let min_pos = img_pos_rect.min;
+                let min_pos = self.img_position.min;
                 let rect_selection = egui::Rect::from_two_pos(selection[0], selection[1]);
                 painter.rect_stroke(
                     rect_selection,
@@ -268,6 +356,94 @@ impl eframe::App for TarsierApp {
             // ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
             //     egui::warn_if_debug_build(ui);
             // });
+        });
+
+        egui::SidePanel::right("my_panel").show(ctx, |ui| {
+            ui.heading("Image Info");
+            ui.label(format!("Size: {}x{}", self.img.width(), self.img.height()));
+            ui.label(format!("Format: {:?}", self.img.color()));
+            ui.label(format!("Selection: {:?}", self.selection));
+
+            ui.separator();
+            ui.add(
+                egui::DragValue::new(&mut self.image_operations.blur)
+                    .speed(1)
+                    .range(0.0..=100.0),
+            );
+
+            if ui.button("Blur").clicked() {
+                match self.selection {
+                    Some(selection) => {
+                        let min_x = selection[0].x as u32 - self.img_position.min.x as u32;
+                        let min_y = selection[0].y as u32 - self.img_position.min.y as u32;
+                        let max_x = selection[1].x as u32 - self.img_position.min.x as u32;
+                        let max_y = selection[1].y as u32 - self.img_position.min.y as u32;
+                        let cropped_img = self.img.crop(min_x, min_y, max_x - min_x, max_y - min_y);
+                        let inner_mut = cropped_img.blur(self.image_operations.blur);
+                        self.img.copy_from(&inner_mut, min_x, min_y).unwrap();
+                    }
+                    None => {
+                        self.img = self.img.blur(self.image_operations.blur);
+                    }
+                }
+            }
+
+            if ui.button("Grayscale").clicked() {
+                match self.selection {
+                    Some(selection) => {
+                        let min_x = selection[0].x as u32 - self.img_position.min.x as u32;
+                        let min_y = selection[0].y as u32 - self.img_position.min.y as u32;
+                        let max_x = selection[1].x as u32 - self.img_position.min.x as u32;
+                        let max_y = selection[1].y as u32 - self.img_position.min.y as u32;
+                        let cropped_img = self.img.crop(min_x, min_y, max_x - min_x, max_y - min_y);
+                        let inner_mut = cropped_img.grayscale();
+                        self.img.copy_from(&inner_mut, min_x, min_y).unwrap();
+                    }
+                    None => {
+                        self.img = self.img.grayscale();
+                    }
+                }
+            }
+
+            if ui.button("invert").clicked() {
+                match self.selection {
+                    Some(selection) => {
+                        let min_x = selection[0].x as u32 - self.img_position.min.x as u32;
+                        let min_y = selection[0].y as u32 - self.img_position.min.y as u32;
+                        let max_x = selection[1].x as u32 - self.img_position.min.x as u32;
+                        let max_y = selection[1].y as u32 - self.img_position.min.y as u32;
+                        let mut cropped_img =
+                            self.img.crop(min_x, min_y, max_x - min_x, max_y - min_y);
+                        cropped_img.invert();
+                        self.img.copy_from(&cropped_img, min_x, min_y).unwrap();
+                    }
+                    None => {
+                        self.img.invert();
+                    }
+                }
+            }
+            ui.add(
+                egui::DragValue::new(&mut self.image_operations.hue_rotation)
+                    .speed(1)
+                    .range(0.0..=360.0),
+            );
+
+            if ui.button("hue rotate").clicked() {
+                match self.selection {
+                    Some(selection) => {
+                        let min_x = selection[0].x as u32 - self.img_position.min.x as u32;
+                        let min_y = selection[0].y as u32 - self.img_position.min.y as u32;
+                        let max_x = selection[1].x as u32 - self.img_position.min.x as u32;
+                        let max_y = selection[1].y as u32 - self.img_position.min.y as u32;
+                        let cropped_img = self.img.crop(min_x, min_y, max_x - min_x, max_y - min_y);
+                        let inner = cropped_img.huerotate(self.image_operations.hue_rotation);
+                        self.img.copy_from(&inner, min_x, min_y).unwrap();
+                    }
+                    None => {
+                        self.img = self.img.huerotate(self.image_operations.hue_rotation);
+                    }
+                }
+            }
         });
     }
 }
