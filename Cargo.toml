@@ -28,11 +28,11 @@ log = "0.4"
 serde = { version = "1", features = ["derive"] }
 image = "0.25.5"
 egui_extras = { version = "0.31.1", features = ["all_loaders"] }
-rfd = "0.15.3"
 
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 env_logger = "0.11"
+rfd = "0.15.3"
 
 # web:
 [target.'cfg(target_arch = "wasm32")'.dependencies]
