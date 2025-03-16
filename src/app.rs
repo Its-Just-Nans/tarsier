@@ -161,14 +161,19 @@ impl eframe::App for TarsierApp {
 
             egui::menu::bar(ui, |ui| {
                 // NOTE: no File->Quit on web pages!
-                let is_web = cfg!(target_arch = "wasm32");
-                if !is_web {
-                    ui.menu_button("File", |ui| {
+                ui.menu_button("File", |ui| {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    {
                         if ui.button("Quit").clicked() {
                             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                         }
-                    });
-                }
+                    }
+
+                    ui.add(egui::Hyperlink::from_label_and_url(
+                        "Github repo",
+                        "https://github.com/Its-Just-Nans/tarsier",
+                    ));
+                });
                 ui.menu_button("Options", |ui| {
                     egui::widgets::global_theme_preference_buttons(ui);
                 });
