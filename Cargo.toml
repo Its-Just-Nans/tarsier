@@ -1,6 +1,6 @@
 [package]
 name = "tarsier"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["n4n5 <its.just.n4n5@gmail.com>"]
 edition = "2021"
 include = ["LICENSE", "**/*.rs", "Cargo.toml"]
