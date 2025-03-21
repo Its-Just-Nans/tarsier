@@ -2,11 +2,16 @@ use image::ImageReader;
 
 use crate::TarsierApp;
 
+pub struct File {
+    pub path: String,
+    pub data: Vec<u8>,
+}
+
 impl TarsierApp {
     pub fn handle_files(&mut self, ctx: &egui::Context) {
         if let Some(result) = &self.file_upload {
             match &result.ready() {
-                Some(Ok((_, data))) => {
+                Some(Ok(File { data, .. })) => {
                     let img = ImageReader::new(std::io::Cursor::new(data)).with_guessed_format();
                     if let Some(img) = self.error_manager.handle_error(img) {
                         let decoded = img.decode();

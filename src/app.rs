@@ -1,9 +1,7 @@
 use std::{io::Cursor, path::PathBuf};
 
 use crate::{
-    errors::{ErrorManager, TarsierError},
-    side_panel::ImageOperations,
-    windows::WindowsData,
+    errors::{ErrorManager, TarsierError}, file::File, side_panel::ImageOperations, windows::WindowsData
 };
 use egui::Pos2;
 use image::ImageReader;
@@ -32,7 +30,7 @@ pub struct TarsierApp {
     pub dropped_files: Vec<egui::DroppedFile>,
 
     #[serde(skip)]
-    pub file_upload: Option<Promise<Result<(String, Vec<u8>), TarsierError>>>,
+    pub file_upload: Option<Promise<Result<File, TarsierError>>>,
 
     #[serde(skip)]
     pub is_selecting: bool,

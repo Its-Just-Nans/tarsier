@@ -7,6 +7,7 @@ include = ["LICENSE", "**/*.rs", "Cargo.toml", "assets/*"]
 description = "A simple image editor"
 license = "MIT"
 rust-version = "1.81"
+homepage = "https://tarsier.n4n5.dev/"
 
 [package.metadata.docs.rs]
 all-features = true
