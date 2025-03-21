@@ -82,14 +82,14 @@ jobs:
             fail-fast: false
             matrix:
                 job:
-                    - { target: aarch64-unknown-linux-gnu, os: ubuntu-22.04, use-cross: true }
-                    - { target: aarch64-unknown-linux-musl, os: ubuntu-22.04, use-cross: true }
-                    - { target: arm-unknown-linux-gnueabihf, os: ubuntu-22.04, use-cross: true }
-                    - { target: arm-unknown-linux-musleabihf, os: ubuntu-22.04, use-cross: true }
-                    - { target: i686-unknown-linux-gnu, os: ubuntu-22.04, use-cross: true }
-                    - { target: i686-unknown-linux-musl, os: ubuntu-22.04, use-cross: true }
-                    - { target: x86_64-unknown-linux-gnu, os: ubuntu-22.04, use-cross: true }
-                    - { target: x86_64-unknown-linux-musl, os: ubuntu-22.04, use-cross: true }
+                    - { target: aarch64-unknown-linux-gnu, os: ubuntu-24.04, use-cross: true }
+                    - { target: aarch64-unknown-linux-musl, os: ubuntu-24.04, use-cross: true }
+                    - { target: arm-unknown-linux-gnueabihf, os: ubuntu-24.04, use-cross: true }
+                    - { target: arm-unknown-linux-musleabihf, os: ubuntu-24.04, use-cross: true }
+                    - { target: i686-unknown-linux-gnu, os: ubuntu-24.04, use-cross: true }
+                    - { target: i686-unknown-linux-musl, os: ubuntu-24.04, use-cross: true }
+                    - { target: x86_64-unknown-linux-gnu, os: ubuntu-24.04, use-cross: true }
+                    - { target: x86_64-unknown-linux-musl, os: ubuntu-24.04, use-cross: true }
                     - { target: x86_64-apple-darwin, os: macos-13 }
                     - { target: aarch64-apple-darwin, os: macos-14 }
                     - { target: i686-pc-windows-msvc, os: windows-2022 }
@@ -115,7 +115,7 @@ jobs:
                   targets: ${{ matrix.job.target }}
                   # On windows, for now build with 1.77.2, so that it works on windows 7.
                   # When we update the MSRV again, we'll need to revisit this, and probably drop support for Win7
-                  toolchain: "${{ contains(matrix.job.target, 'windows-') && '1.83.0' || 'stable' }}"
+                  toolchain: "${{ contains(matrix.job.target, 'windows-') && '1.81.0' || 'stable' }}"
 
             - name: Install cross
               if: matrix.job.use-cross
