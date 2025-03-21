@@ -24,7 +24,10 @@ impl TarsierApp {
                     data: buf,
                 });
             }
-            Err(TarsierError::new("Upload: no file Selected".to_string()))
+            // no file selected
+            Err(TarsierError::new_fake(
+                "Upload: no file Selected".to_string(),
+            ))
         }));
     }
 
@@ -46,7 +49,10 @@ impl TarsierApp {
                     return Ok(File { path, data: buf });
                 }
             }
-            Err(TarsierError::new("Upload: no file Selected".to_string()))
+            // no file selected
+            Err(TarsierError::new_fake(
+                "Upload: no file Selected".to_string(),
+            ))
         }))
     }
 

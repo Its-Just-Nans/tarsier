@@ -1,9 +1,16 @@
 use std::{io, sync::Arc};
 
+#[derive(Debug, Clone)]
+enum ErrorType {
+    Normal,
+    Fake,
+}
+
 #[derive(Debug)]
 pub struct TarsierError {
     pub message: String,
     pub source: Option<Arc<dyn std::error::Error + Send + Sync>>,
+    error_type: ErrorType,
 }
 
 impl Clone for TarsierError {
@@ -11,6 +18,7 @@ impl Clone for TarsierError {
         Self {
             message: self.message.clone(),
             source: self.source.clone(),
+            error_type: self.error_type.clone(),
         }
     }
 }
@@ -20,7 +28,20 @@ impl TarsierError {
         Self {
             message,
             source: None,
+            error_type: ErrorType::Normal,
         }
+    }
+
+    pub fn new_fake(message: String) -> Self {
+        Self {
+            message,
+            source: None,
+            error_type: ErrorType::Fake,
+        }
+    }
+
+    pub fn is_fake(&self) -> bool {
+        matches!(self.error_type, ErrorType::Fake)
     }
 }
 
@@ -35,6 +56,7 @@ impl From<io::Error> for TarsierError {
         Self {
             message: error.to_string(),
             source: Some(Arc::new(error)),
+            error_type: ErrorType::Normal,
         }
     }
 }
@@ -44,6 +66,7 @@ impl From<image::ImageError> for TarsierError {
         Self {
             message: error.to_string(),
             source: Some(Arc::new(error)),
+            error_type: ErrorType::Normal,
         }
     }
 }
@@ -61,6 +84,9 @@ impl ErrorManager {
     }
 
     pub fn add_error(&mut self, error: TarsierError) {
+        if error.is_fake() {
+            return;
+        }
         self.errors.push(error);
     }
 
