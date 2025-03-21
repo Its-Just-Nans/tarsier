@@ -26,10 +26,18 @@ impl TarsierApp {
     pub fn selection_window(&mut self, ctx: &egui::Context) {
         egui::Window::new("Selection")
             .open(&mut self.windows.selection_window)
-            .show(ctx, |ui| {
-                ui.label("Selection rect");
-                ui.label(format!("{:?}", self.selection));
-                ui.separator();
+            .show(ctx, |ui| match self.selection {
+                Some(rect) => {
+                    let width = rect.width().abs() as u32;
+                    let height = rect.height().abs() as u32;
+                    ui.label(format!("Width: {}", width));
+                    ui.label(format!("Height: {}", height));
+                    ui.label(format!("Min: {:?}", rect.left_top()));
+                    ui.label(format!("Max: {:?}", rect.right_bottom()));
+                }
+                None => {
+                    ui.label("No selection");
+                }
             });
     }
 

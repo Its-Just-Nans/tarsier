@@ -21,22 +21,22 @@ impl TarsierApp {
             let sized_texture = SizedTexture::from_handle(&svg_texture);
 
             egui::ScrollArea::both().show_viewport(ui, |ui, viewport| {
-                let painter = ui.painter();
                 {
                     // TODO draw a grid
-                    let grid_size = 10.0;
-                    let grid_color = egui::Color32::from_black_alpha(50);
-                    let min_pos = viewport.min;
-                    let max_pos = Pos2::new(size[0] as f32, size[1] as f32);
-                    let min_x = min_pos.x;
-                    let min_y = size[1] as f32;
+                    // let painter = ui.painter();
+                    // let grid_size = 10.0;
+                    // let grid_color = egui::Color32::from_black_alpha(50);
+                    // let min_pos = viewport.min;
+                    // let max_pos = Pos2::new(size[0] as f32, size[1] as f32);
+                    // let min_x = min_pos.x;
+                    // let min_y = size[1] as f32;
 
-                    for x in (min_x as i32..max_pos.x as i32).step_by(grid_size as usize) {
-                        painter.line_segment(
-                            [Pos2::new(x as f32, min_y), Pos2::new(x as f32, max_pos.y)],
-                            egui::Stroke::new(1.0, grid_color),
-                        );
-                    }
+                    // for x in (min_x as i32..max_pos.x as i32).step_by(grid_size as usize) {
+                    //     painter.line_segment(
+                    //         [Pos2::new(x as f32, min_y), Pos2::new(x as f32, max_pos.y)],
+                    //         egui::Stroke::new(1.0, grid_color),
+                    //     );
+                    // }
                 }
                 let response = ui.add(Image::new(sized_texture).sense(Sense::click_and_drag()));
                 self.img_position = response.rect;
@@ -52,8 +52,8 @@ impl TarsierApp {
                         let pos =
                             pos - Vec2::new(ecart_x - viewport.min.x, ecart_y - viewport.min.y);
                         let correct_pos = Pos2::new(
-                            pos.x.clamp(0.0, size[0] as f32),
-                            pos.y.clamp(0.0, size[1] as f32),
+                            pos.x.round().clamp(0.0, size[0] as f32),
+                            pos.y.round().clamp(0.0, size[1] as f32),
                         );
                         match self.image_operations.mode {
                             EditMode::Selection => {
@@ -88,8 +88,8 @@ impl TarsierApp {
                                 let pos = pos
                                     - Vec2::new(ecart_x - viewport.min.x, ecart_y - viewport.min.y);
                                 let correct_pos = Pos2::new(
-                                    pos.x.clamp(0.0, size[0] as f32),
-                                    pos.y.clamp(0.0, size[1] as f32),
+                                    pos.x.round().clamp(0.0, size[0] as f32),
+                                    pos.y.round().clamp(0.0, size[1] as f32),
                                 );
                                 self.draw_point(correct_pos.x as i32, correct_pos.y as i32);
                             }
