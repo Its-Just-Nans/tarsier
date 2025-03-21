@@ -12,4 +12,8 @@ for i in 48 96 144 192; do convert -background none $TO_ICONIFY -resize ${i}x${i
 convert -background none favicon-* favicon.ico
 rm favicon-*
 
-for i in *.svg; do convert -background none "$i" -resize 64x64 "${i%.svg}.png"; done
+for i in *.svg; do
+    if [ ! -f "${i%.svg}.png" ]; then
+        convert -background none "$i" -resize 64x64 "${i%.svg}.png"
+    fi
+done
