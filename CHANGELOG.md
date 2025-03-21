@@ -2,4 +2,4 @@
 
 ## `0.2.0`
 
-First real realease
+First real release
