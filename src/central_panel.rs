@@ -39,9 +39,9 @@ impl TarsierApp {
                     // }
                 }
                 let response = ui.add(Image::new(sized_texture).sense(Sense::click_and_drag()));
-                self.img_position = response.rect;
-                let ecart_x = self.img_position.min.x + viewport.min.x;
-                let ecart_y = self.img_position.min.y + viewport.min.y;
+                let img_position = response.rect;
+                let ecart_x = img_position.min.x + viewport.min.x;
+                let ecart_y = img_position.min.y + viewport.min.y;
 
                 let painter = ui.painter();
                 if response.dragged() {
@@ -97,7 +97,7 @@ impl TarsierApp {
                     }
                 }
                 if let Some(selection) = self.selection {
-                    let min_pos = self.img_position.min;
+                    let min_pos = img_position.min;
                     let rect_selection = egui::Rect::from_two_pos(
                         Pos2::new(
                             selection.min.x - viewport.min.x + ecart_x,
@@ -152,9 +152,6 @@ impl TarsierApp {
                     );
                 }
             });
-            // ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
-            //     egui::warn_if_debug_build(ui);
-            // });
         });
     }
 }

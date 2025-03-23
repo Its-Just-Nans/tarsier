@@ -1,7 +1,10 @@
 use std::{io::Cursor, path::PathBuf};
 
 use crate::{
-    errors::{ErrorManager, TarsierError}, file::File, side_panel::ImageOperations, windows::WindowsData
+    errors::{ErrorManager, TarsierError},
+    file::File,
+    side_panel::ImageOperations,
+    windows::WindowsData,
 };
 use egui::Pos2;
 use image::ImageReader;
@@ -13,9 +16,6 @@ use poll_promise::Promise;
 pub struct TarsierApp {
     #[serde(skip)]
     pub img: image::DynamicImage,
-
-    #[serde(skip)]
-    pub img_position: egui::Rect,
 
     #[serde(skip)]
     pub base_img: image::DynamicImage,
@@ -58,7 +58,6 @@ impl Default for TarsierApp {
         Self {
             base_img: img.clone(),
             img,
-            img_position: egui::Rect::ZERO,
             selection: None,
             start_selection: Pos2::ZERO,
             is_selecting: false,

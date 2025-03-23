@@ -83,6 +83,7 @@ impl TarsierApp {
                     ui.menu_button("Theme", |ui| {
                         egui::widgets::global_theme_preference_buttons(ui);
                     });
+                    egui::warn_if_debug_build(ui);
                 });
                 ui.menu_button("Windows", |ui| {
                     ui.checkbox(&mut self.windows.selection_window, "Selection");

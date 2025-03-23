@@ -77,23 +77,23 @@ impl TarsierApp {
                 .show_ui(ui, |ui| {
                     ui.selectable_value(
                         &mut self.image_operations.other.convert_to,
-                        ColorType::L16,
-                        format!("{:?}", ColorType::L16),
-                    );
-                    ui.selectable_value(
-                        &mut self.image_operations.other.convert_to,
                         ColorType::L8,
                         format!("{:?}", ColorType::L8),
                     );
                     ui.selectable_value(
                         &mut self.image_operations.other.convert_to,
-                        ColorType::La16,
-                        format!("{:?}", ColorType::La16),
+                        ColorType::L16,
+                        format!("{:?}", ColorType::L16),
                     );
                     ui.selectable_value(
                         &mut self.image_operations.other.convert_to,
                         ColorType::La8,
                         format!("{:?}", ColorType::La8),
+                    );
+                    ui.selectable_value(
+                        &mut self.image_operations.other.convert_to,
+                        ColorType::La16,
+                        format!("{:?}", ColorType::La16),
                     );
                     ui.selectable_value(
                         &mut self.image_operations.other.convert_to,
@@ -358,6 +358,10 @@ impl TarsierApp {
             self.image_operations.pen_color = [color.r(), color.g(), color.b(), color.a()];
             ui.checkbox(&mut self.image_operations.drawing_mode, "Blend");
             ui.separator();
+
+            ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
+                egui::warn_if_debug_build(ui);
+            });
         });
     }
 
