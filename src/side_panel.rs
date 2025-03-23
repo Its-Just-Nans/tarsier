@@ -19,6 +19,18 @@ impl Display for EditMode {
     }
 }
 
+pub struct Others {
+    pub convert_to: ColorType,
+}
+
+impl Default for Others {
+    fn default() -> Self {
+        Self {
+            convert_to: ColorType::Rgba8,
+        }
+    }
+}
+
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct ImageOperations {
     pub blur: f32,
@@ -29,6 +41,8 @@ pub struct ImageOperations {
     pub pen_color: [u8; 4],
     pub mode: EditMode,
     pub drawing_mode: bool,
+    #[serde(skip)]
+    pub other: Others,
 }
 
 impl Default for ImageOperations {
@@ -42,6 +56,9 @@ impl Default for ImageOperations {
             pen_color: [0, 0, 0, 255],
             mode: EditMode::Selection,
             drawing_mode: false,
+            other: Others {
+                convert_to: ColorType::Rgba8,
+            },
         }
     }
 }
@@ -53,6 +70,77 @@ impl TarsierApp {
             ui.label(format!("Size: {}x{}", self.img.width(), self.img.height()));
             ui.label(format!("Format: {:?}", self.img.color()));
 
+            ui.separator();
+            ui.label("Convert");
+            egui::ComboBox::from_id_salt("convert_box")
+                .selected_text(format!("{:?}", self.image_operations.other.convert_to))
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(
+                        &mut self.image_operations.other.convert_to,
+                        ColorType::L16,
+                        format!("{:?}", ColorType::L16),
+                    );
+                    ui.selectable_value(
+                        &mut self.image_operations.other.convert_to,
+                        ColorType::L8,
+                        format!("{:?}", ColorType::L8),
+                    );
+                    ui.selectable_value(
+                        &mut self.image_operations.other.convert_to,
+                        ColorType::La16,
+                        format!("{:?}", ColorType::La16),
+                    );
+                    ui.selectable_value(
+                        &mut self.image_operations.other.convert_to,
+                        ColorType::La8,
+                        format!("{:?}", ColorType::La8),
+                    );
+                    ui.selectable_value(
+                        &mut self.image_operations.other.convert_to,
+                        ColorType::Rgb8,
+                        format!("{:?}", ColorType::Rgb8),
+                    );
+                    ui.selectable_value(
+                        &mut self.image_operations.other.convert_to,
+                        ColorType::Rgb16,
+                        format!("{:?}", ColorType::Rgb16),
+                    );
+                    ui.selectable_value(
+                        &mut self.image_operations.other.convert_to,
+                        ColorType::Rgb32F,
+                        format!("{:?}", ColorType::Rgb32F),
+                    );
+                    ui.selectable_value(
+                        &mut self.image_operations.other.convert_to,
+                        ColorType::Rgba8,
+                        format!("{:?}", ColorType::Rgba8),
+                    );
+                    ui.selectable_value(
+                        &mut self.image_operations.other.convert_to,
+                        ColorType::Rgba16,
+                        format!("{:?}", ColorType::Rgba16),
+                    );
+                    ui.selectable_value(
+                        &mut self.image_operations.other.convert_to,
+                        ColorType::Rgba32F,
+                        format!("{:?}", ColorType::Rgba32F),
+                    );
+                });
+            if ui.button("Convert").clicked() {
+                self.img = match self.image_operations.other.convert_to {
+                    ColorType::L8 => self.img.to_luma8().into(),
+                    ColorType::L16 => self.img.to_luma16().into(),
+                    ColorType::La8 => self.img.to_luma_alpha8().into(),
+                    ColorType::La16 => self.img.to_luma_alpha16().into(),
+                    ColorType::Rgb8 => self.img.to_rgb8().into(),
+                    ColorType::Rgb16 => self.img.to_rgb16().into(),
+                    ColorType::Rgb32F => self.img.to_rgb32f().into(),
+                    ColorType::Rgba8 => self.img.to_rgba8().into(),
+                    ColorType::Rgba16 => self.img.to_rgba16().into(),
+                    ColorType::Rgba32F => self.img.to_rgba32f().into(),
+                    _ => self.img.to_rgba8().into(),
+                }
+            }
             ui.separator();
             ui.add(egui::Slider::new(&mut self.image_operations.blur, 0.0..=100.0).text("Blur"));
 
