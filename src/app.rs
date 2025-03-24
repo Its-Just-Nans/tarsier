@@ -122,7 +122,6 @@ impl eframe::App for TarsierApp {
 
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-
         self.top_panel(ctx);
 
         if self.windows.right_panel {
