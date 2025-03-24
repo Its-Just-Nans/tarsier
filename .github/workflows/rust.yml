@@ -104,6 +104,7 @@ jobs:
 
   build:
     runs-on: ${{ matrix.os }}
+    needs: [check, check_wasm, test, fmt, clippy]
     strategy:
       fail-fast: false
       matrix:

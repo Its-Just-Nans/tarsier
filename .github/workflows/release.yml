@@ -54,7 +54,7 @@ jobs:
               with:
                   components: clippy
             - uses: actions/checkout@v4
-            - run: cargo clippy --all-targets --all-features
+            - run: cargo clippy --all-targets --all-features -- -D warnings
 
     min_version:
         name: Minimum supported rust version
