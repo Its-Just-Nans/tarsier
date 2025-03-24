@@ -1,6 +1,6 @@
 [package]
 name = "tarsier"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["n4n5 <its.just.n4n5@gmail.com>"]
 edition = "2021"
 include = ["LICENSE", "**/*.rs", "Cargo.toml", "assets/*"]
@@ -8,6 +8,9 @@ description = "A simple image editor"
 license = "MIT"
 rust-version = "1.81"
 homepage = "https://tarsier.n4n5.dev/"
+repository = "https://github.com/Its-Just-Nans/tarsier"
+documentation = "https://docs.rs/tarsier"
+keywords = ["image", "edition", "editor"]
 
 [package.metadata.docs.rs]
 all-features = true
