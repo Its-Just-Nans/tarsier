@@ -11,6 +11,7 @@ homepage = "https://tarsier.n4n5.dev/"
 repository = "https://github.com/Its-Just-Nans/tarsier"
 documentation = "https://docs.rs/tarsier"
 keywords = ["image", "edition", "editor"]
+categories = ["graphics", "multimedia"]
 
 [package.metadata.docs.rs]
 all-features = true
