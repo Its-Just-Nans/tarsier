@@ -1,6 +1,6 @@
 use std::{io::Cursor, path::PathBuf};
 
-use egui::{text::LayoutJob, Color32, ImageSource, TextFormat};
+use egui::{text::LayoutJob, Color32, ImageSource, TextFormat, ThemePreference};
 use poll_promise::Promise;
 
 use crate::{errors::TarsierError, file::File, side_panel::EditMode, TarsierApp};
@@ -56,35 +56,66 @@ impl TarsierApp {
         }))
     }
 
+    pub fn menu_file(&mut self, ctx: &egui::Context, ui: &mut egui::Ui) {
+        // NOTE: no File->Quit on web pages!
+        ui.menu_button("File", |ui| {
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                if ui.button("Quit").clicked() {
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                }
+            }
+
+            if ui.button("Open").clicked() {
+                ui.close_menu();
+                self.handle_file_open();
+            }
+            ui.menu_button("Save", |ui| {
+                if ui.button("PNG").clicked() {
+                    ui.close_menu();
+                    let save_path = self.get_save_path();
+                    self.save_image(image::ImageFormat::Png, &save_path);
+                }
+                if ui.button("JPEG").clicked() {
+                    ui.close_menu();
+                    let save_path = self.get_save_path();
+                    self.save_image(image::ImageFormat::Jpeg, &save_path);
+                }
+                if ui.button("BMP").clicked() {
+                    ui.close_menu();
+                    let save_path = self.get_save_path();
+                    self.save_image(image::ImageFormat::Bmp, &save_path);
+                }
+                if ui.button("GIF").clicked() {
+                    ui.close_menu();
+                    let save_path = self.get_save_path();
+                    self.save_image(image::ImageFormat::Gif, &save_path);
+                }
+            });
+            ui.menu_button("Theme", |ui| {
+                let mut theme_preference = ui.ctx().options(|opt| opt.theme_preference);
+                ui.selectable_value(&mut theme_preference, ThemePreference::Light, "☀ Light");
+                ui.selectable_value(&mut theme_preference, ThemePreference::Dark, "🌙 Dark");
+                ui.selectable_value(&mut theme_preference, ThemePreference::System, "💻 System");
+                ui.ctx().set_theme(theme_preference);
+            });
+            ui.add(
+                egui::Hyperlink::from_label_and_url(
+                    "Github repo",
+                    "https://github.com/Its-Just-Nans/tarsier",
+                )
+                .open_in_new_tab(true),
+            );
+            egui::warn_if_debug_build(ui);
+        });
+    }
+
     pub fn top_panel(&mut self, ctx: &egui::Context) {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             // The top panel is often a good place for a menu bar:
 
             egui::menu::bar(ui, |ui| {
-                // NOTE: no File->Quit on web pages!
-                ui.menu_button("File", |ui| {
-                    #[cfg(not(target_arch = "wasm32"))]
-                    {
-                        if ui.button("Quit").clicked() {
-                            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-                        }
-                    }
-
-                    if ui.button("Open").clicked() {
-                        self.handle_file_open();
-                    }
-                    ui.add(
-                        egui::Hyperlink::from_label_and_url(
-                            "Github repo",
-                            "https://github.com/Its-Just-Nans/tarsier",
-                        )
-                        .open_in_new_tab(true),
-                    );
-                    ui.menu_button("Theme", |ui| {
-                        egui::widgets::global_theme_preference_buttons(ui);
-                    });
-                    egui::warn_if_debug_build(ui);
-                });
+                self.menu_file(ctx, ui);
                 ui.menu_button("Windows", |ui| {
                     ui.checkbox(&mut self.windows.selection_window, "Selection");
                     ui.checkbox(&mut self.windows.right_panel, "Right Panel");
@@ -129,25 +160,6 @@ impl TarsierApp {
                 {
                     self.img = self.img.flipv();
                 }
-                ui.menu_button("Save", |ui| {
-                    if ui.button("PNG").clicked() {
-                        let save_path = self.get_save_path();
-                        self.save_image(image::ImageFormat::Png, &save_path);
-                    }
-                    if ui.button("JPEG").clicked() {
-                        let save_path = self.get_save_path();
-                        self.save_image(image::ImageFormat::Jpeg, &save_path);
-                    }
-                    if ui.button("BMP").clicked() {
-                        let save_path = self.get_save_path();
-                        self.save_image(image::ImageFormat::Bmp, &save_path);
-                    }
-                    if ui.button("GIF").clicked() {
-                        let save_path = self.get_save_path();
-                        self.save_image(image::ImageFormat::Gif, &save_path);
-                    }
-                });
-
                 ui.separator();
                 let (default_color, _strong_color) = if ui.visuals().dark_mode {
                     (Color32::LIGHT_GRAY, Color32::WHITE)
@@ -247,7 +259,7 @@ impl TarsierApp {
         file.write_all(data).unwrap();
     }
 
-    // TODO handle unwrap
+    // TODO handle unwraps
     #[cfg(target_arch = "wasm32")]
     fn save_file(&mut self, data: &[u8], path_file: &PathBuf) {
         // create blob
