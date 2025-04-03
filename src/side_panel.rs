@@ -141,8 +141,6 @@ impl TarsierApp {
                     _ => self.img.to_rgba8().into(),
                 }
             }
-            ui.separator();
-            ui.add(egui::Slider::new(&mut self.image_operations.blur, 0.0..=100.0).text("Blur"));
 
             let current_selection = self.selection.map(|selection| {
                 (
@@ -160,27 +158,7 @@ impl TarsierApp {
             ui.separator();
             self.button_invert(ui, &current_selection);
             ui.separator();
-
-            if ui.button("Blur").clicked() {
-                match current_selection {
-                    Some(selection) => {
-                        let cropped_img = self.img.crop(
-                            selection.0,
-                            selection.1,
-                            selection.2 - selection.0,
-                            selection.3 - selection.1,
-                        );
-                        let inner_mut = cropped_img.blur(self.image_operations.blur);
-                        self.img
-                            .copy_from(&inner_mut, selection.0, selection.1)
-                            .unwrap();
-                    }
-                    None => {
-                        self.img = self.img.blur(self.image_operations.blur);
-                    }
-                }
-            }
-
+            self.button_blur(ui, &current_selection);
             ui.separator();
             ui.add(egui::Slider::new(
                 &mut self.image_operations.hue_rotation,
@@ -384,6 +362,36 @@ impl TarsierApp {
                 }
                 None => {
                     self.img.invert();
+                }
+            }
+        }
+    }
+
+    pub fn button_blur(
+        &mut self,
+        ui: &mut egui::Ui,
+        current_selection: &Option<(u32, u32, u32, u32)>,
+    ) {
+        ui.add(egui::Slider::new(
+            &mut self.image_operations.blur,
+            0.0..=100.0,
+        ));
+        if ui.button("Blur").clicked() {
+            match current_selection {
+                Some(selection) => {
+                    let cropped_img = self.img.crop(
+                        selection.0,
+                        selection.1,
+                        selection.2 - selection.0,
+                        selection.3 - selection.1,
+                    );
+                    let inner_mut = cropped_img.blur(self.image_operations.blur);
+                    self.img
+                        .copy_from(&inner_mut, selection.0, selection.1)
+                        .unwrap();
+                }
+                None => {
+                    self.img = self.img.blur(self.image_operations.blur);
                 }
             }
         }
