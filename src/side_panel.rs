@@ -1,8 +1,11 @@
 use std::fmt::Display;
 
+use egui::ImageSource;
 use image::{ColorType, DynamicImage, GenericImage, GenericImageView, Pixel};
 
 use crate::TarsierApp;
+
+const CROP_ICON: ImageSource<'_> = egui::include_image!("../assets/crop.png");
 
 #[derive(serde::Deserialize, serde::Serialize, PartialEq, Debug, Clone, Copy)]
 pub enum EditMode {
@@ -234,26 +237,32 @@ impl TarsierApp {
             }
             ui.separator();
             if self.image_operations.mode == EditMode::Drawing {
-                ui.add(egui::Slider::new(
-                    &mut self.image_operations.pen_radius,
-                    1..=500,
-                ));
-                let [r, g, b, a] = self.image_operations.pen_color;
-                let mut color = egui::Color32::from_rgba_premultiplied(r, g, b, a);
-                egui::color_picker::color_edit_button_srgba(
-                    ui,
-                    &mut color,
-                    egui::color_picker::Alpha::OnlyBlend,
-                );
-                self.image_operations.pen_color = [color.r(), color.g(), color.b(), color.a()];
-                ui.checkbox(&mut self.image_operations.drawing_mode, "Blend");
+                self.button_drawing(ui);
                 ui.separator();
+            } else {
+                self.button_crop(ui);
             }
 
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
                 egui::warn_if_debug_build(ui);
             });
         });
+    }
+
+    pub fn button_drawing(&mut self, ui: &mut egui::Ui) {
+        ui.add(egui::Slider::new(
+            &mut self.image_operations.pen_radius,
+            1..=500,
+        ));
+        let [r, g, b, a] = self.image_operations.pen_color;
+        let mut color = egui::Color32::from_rgba_premultiplied(r, g, b, a);
+        egui::color_picker::color_edit_button_srgba(
+            ui,
+            &mut color,
+            egui::color_picker::Alpha::OnlyBlend,
+        );
+        self.image_operations.pen_color = [color.r(), color.g(), color.b(), color.a()];
+        ui.checkbox(&mut self.image_operations.drawing_mode, "Blend");
     }
 
     pub fn button_outline(&mut self, ui: &mut egui::Ui) {
@@ -393,6 +402,28 @@ impl TarsierApp {
                 None => {
                     self.img = self.img.blur(self.image_operations.blur);
                 }
+            }
+        }
+    }
+
+    pub fn button_crop(&mut self, ui: &mut egui::Ui) {
+        if let Some(selection) = self.selection {
+            if ui
+                .add(egui::Button::image_and_text(CROP_ICON, "Crop"))
+                .on_hover_text("Crop the image")
+                .clicked()
+            {
+                let min_pos = selection.min;
+                let max_pos = selection.max;
+                let min_x = min_pos.x as u32;
+                let min_y = min_pos.y as u32;
+                let max_x = max_pos.x as u32;
+                let max_y = max_pos.y as u32;
+                let cropped_img = self
+                    .img
+                    .crop_imm(min_x, min_y, max_x - min_x, max_y - min_y);
+                self.img = cropped_img;
+                self.selection = None;
             }
         }
     }

@@ -5,7 +5,6 @@ use poll_promise::Promise;
 
 use crate::{errors::TarsierError, file::File, side_panel::EditMode, TarsierApp};
 
-const CROP_ICON: ImageSource<'_> = egui::include_image!("../assets/crop.png");
 const RESET_ICON: ImageSource<'_> = egui::include_image!("../assets/x-circle.png");
 const ROTATE_CCW_ICON: ImageSource<'_> = egui::include_image!("../assets/rotate_ccw.png");
 const ROTATE_CW_ICON: ImageSource<'_> = egui::include_image!("../assets/rotate_cw.png");
@@ -184,8 +183,8 @@ impl TarsierApp {
                         ..Default::default()
                     },
                 );
-                let previous_state = self.image_operations.mode;
                 ui.menu_button(job, |ui| {
+                    let previous_state = self.image_operations.mode;
                     ui.selectable_value(
                         &mut self.image_operations.mode,
                         EditMode::Selection,
@@ -196,34 +195,15 @@ impl TarsierApp {
                         EditMode::Drawing,
                         "Drawing",
                     );
-                });
-                if self.image_operations.mode != previous_state
-                    && self.image_operations.mode == EditMode::Drawing
-                {
-                    self.selection = None;
-                }
-                ui.separator();
-                if let Some(selection) = self.selection {
-                    if ui
-                        .add(egui::Button::image(CROP_ICON))
-                        .on_hover_text("Crop the image")
-                        .clicked()
-                    {
-                        if let Some(selection) = self.selection {
-                            let min_pos = selection.min;
-                            let max_pos = selection.max;
-                            let min_x = min_pos.x as u32;
-                            let min_y = min_pos.y as u32;
-                            let max_x = max_pos.x as u32;
-                            let max_y = max_pos.y as u32;
-                            let cropped_img =
-                                self.img
-                                    .crop_imm(min_x, min_y, max_x - min_x, max_y - min_y);
-                            self.img = cropped_img;
+                    if self.image_operations.mode != previous_state {
+                        ui.close_menu();
+                        if self.image_operations.mode == EditMode::Drawing {
                             self.selection = None;
                         }
                     }
-                    ui.separator();
+                });
+                ui.separator();
+                if let Some(selection) = self.selection {
                     if ui
                         .label(format!(
                             "Selection: {}x{}",
