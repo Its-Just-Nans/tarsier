@@ -157,6 +157,8 @@ impl TarsierApp {
             ui.separator();
             self.button_outline(ui);
             ui.separator();
+            self.button_detection(ui);
+            ui.separator();
             self.button_grayscale(ui, &current_selection);
             ui.separator();
             self.button_invert(ui, &current_selection);
@@ -266,7 +268,7 @@ impl TarsierApp {
     }
 
     pub fn button_outline(&mut self, ui: &mut egui::Ui) {
-        if ui.button("outline").clicked() {
+        if ui.button("sobel outline").clicked() {
             let sobel_x = self.img.filter3x3(&[
                 -1.0, 0.0, 1.0, //
                 -2.0, 0.0, 2.0, //
@@ -299,6 +301,17 @@ impl TarsierApp {
                     self.img.put_pixel(x, y, pixel);
                 }
             }
+        }
+    }
+
+    pub fn button_detection(&mut self, ui: &mut egui::Ui) {
+        if ui.button("edge detection").clicked() {
+            let m = self.img.filter3x3(&[
+                0.0, -1.0, 0.0, //
+                -1.0, 4.0, -1.0, //
+                0.0, -1.0, 0.0, //
+            ]);
+            self.img = m;
         }
     }
 

@@ -34,9 +34,12 @@ impl TarsierApp {
             #[cfg(not(target_arch = "wasm32"))]
             {
                 if let Some(path) = file.path.as_deref() {
-                    let img = ImageReader::open(path).unwrap().decode().unwrap();
-                    self.base_img = img.clone();
-                    self.img = img;
+                    if let Some(img) = self.error_manager.handle_error(ImageReader::open(path)) {
+                        if let Some(img) = self.error_manager.handle_error(img.decode()) {
+                            self.base_img = img.clone();
+                            self.img = img;
+                        }
+                    }
                     self.dropped_files.clear();
                 }
             }
@@ -44,13 +47,15 @@ impl TarsierApp {
             {
                 use std::io::Cursor;
                 if let Some(bytes) = file.bytes.as_deref() {
-                    let img = ImageReader::new(Cursor::new(bytes))
-                        .with_guessed_format()
-                        .unwrap()
-                        .decode()
-                        .unwrap();
-                    self.base_img = img.clone();
-                    self.img = img;
+                    if let Some(img) = self
+                        .error_manager
+                        .handle_error(ImageReader::new(Cursor::new(bytes)).with_guessed_format())
+                    {
+                        if let Some(img) = self.error_manager.handle_error(img.decode()) {
+                            self.base_img = img.clone();
+                            self.img = img;
+                        }
+                    }
                     self.dropped_files.clear();
                 }
             }
