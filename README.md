@@ -1,4 +1,4 @@
-# tarsier
+# tarsier [![crates.io version](https://img.shields.io/crates/v/tarsier)](https://crates.io/crates/tarsier) ![crates.io downloads](https://img.shields.io/crates/d/tarsier) [![docs.rs](https://img.shields.io/docsrs/tarsier)](https://crates.io/crates/tarsier)
 
 A simple image editor.
 
