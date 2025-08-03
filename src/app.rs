@@ -113,8 +113,8 @@ impl TarsierApp {
         Ok(res)
     }
     #[cfg(target_arch = "wasm32")]
-    pub fn get_save_path(&mut self) -> std::path::PathBuf {
-        std::path::PathBuf::new()
+    pub fn get_save_path(&mut self) -> Result<std::path::PathBuf, String> {
+        Ok(std::path::PathBuf::new())
     }
 }
 
