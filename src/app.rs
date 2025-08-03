@@ -89,24 +89,28 @@ impl TarsierApp {
 
 impl TarsierApp {
     #[cfg(not(target_arch = "wasm32"))]
-    pub fn get_save_path(&mut self) -> std::path::PathBuf {
+    pub fn get_save_path(&mut self) -> Result<std::path::PathBuf, String> {
         use rfd::FileDialog;
         let path = FileDialog::new()
             .set_directory(match &self.save_path {
-                Some(path) => path.parent().unwrap(),
+                Some(path) => path.parent().ok_or("Cannot get parent in the path")?,
                 None => std::path::Path::new("."),
             })
             .set_file_name(match &self.save_path {
-                Some(path) => path.file_name().unwrap().to_string_lossy(),
+                Some(path) => path
+                    .file_name()
+                    .ok_or("Cannot get file name")?
+                    .to_string_lossy(),
                 None => std::path::Path::new("image").to_string_lossy(),
             })
             .save_file();
-        if let Some(path) = path {
+        let res = if let Some(path) = path {
             self.save_path = Some(path.clone());
             path
         } else {
             std::path::Path::new(".").to_path_buf()
-        }
+        };
+        Ok(res)
     }
     #[cfg(target_arch = "wasm32")]
     pub fn get_save_path(&mut self) -> std::path::PathBuf {

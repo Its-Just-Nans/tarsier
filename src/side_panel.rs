@@ -180,9 +180,8 @@ impl TarsierApp {
                             selection.3 - selection.1,
                         );
                         let inner = cropped_img.huerotate(self.image_operations.hue_rotation);
-                        self.img
-                            .copy_from(&inner, selection.0, selection.1)
-                            .unwrap();
+                        let res = self.img.copy_from(&inner, selection.0, selection.1);
+                        self.error_manager.handle_error(res);
                     }
                     None => {
                         self.img = self.img.huerotate(self.image_operations.hue_rotation);
@@ -204,9 +203,8 @@ impl TarsierApp {
                             selection.3 - selection.1,
                         );
                         let inner = cropped_img.brighten(self.image_operations.brighten);
-                        self.img
-                            .copy_from(&inner, selection.0, selection.1)
-                            .unwrap();
+                        let res = self.img.copy_from(&inner, selection.0, selection.1);
+                        self.error_manager.handle_error(res);
                     }
                     None => {
                         self.img = self.img.brighten(self.image_operations.brighten);
@@ -228,9 +226,8 @@ impl TarsierApp {
                             selection.3 - selection.1,
                         );
                         let inner = cropped_img.adjust_contrast(self.image_operations.contrast);
-                        self.img
-                            .copy_from(&inner, selection.0, selection.1)
-                            .unwrap();
+                        let res = self.img.copy_from(&inner, selection.0, selection.1);
+                        self.error_manager.handle_error(res);
                     }
                     None => {
                         self.img = self.img.adjust_contrast(self.image_operations.contrast);
@@ -341,9 +338,8 @@ impl TarsierApp {
                         ColorType::Rgba16 => inner_mut.to_rgba16().into(),
                         _ => inner_mut.to_rgba8().into(),
                     };
-                    self.img
-                        .copy_from(&inner_mut, selection.0, selection.1)
-                        .unwrap();
+                    let res = self.img.copy_from(&inner_mut, selection.0, selection.1);
+                    self.error_manager.handle_error(res);
                 }
                 None => {
                     let full_img = self.img.grayscale();
@@ -378,9 +374,8 @@ impl TarsierApp {
                         selection.3 - selection.1,
                     );
                     cropped_img.invert();
-                    self.img
-                        .copy_from(&cropped_img, selection.0, selection.1)
-                        .unwrap();
+                    let res = self.img.copy_from(&cropped_img, selection.0, selection.1);
+                    self.error_manager.handle_error(res);
                 }
                 None => {
                     self.img.invert();
@@ -408,9 +403,8 @@ impl TarsierApp {
                         selection.3 - selection.1,
                     );
                     let inner_mut = cropped_img.blur(self.image_operations.blur);
-                    self.img
-                        .copy_from(&inner_mut, selection.0, selection.1)
-                        .unwrap();
+                    let res = self.img.copy_from(&inner_mut, selection.0, selection.1);
+                    self.error_manager.handle_error(res);
                 }
                 None => {
                     self.img = self.img.blur(self.image_operations.blur);

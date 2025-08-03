@@ -73,22 +73,34 @@ impl TarsierApp {
                 if ui.button("PNG").clicked() {
                     ui.close_menu();
                     let save_path = self.get_save_path();
-                    self.save_image(image::ImageFormat::Png, &save_path);
+                    if let Some(save_path) = self.error_manager.handle_error(save_path) {
+                        let res = self.save_image(image::ImageFormat::Png, &save_path);
+                        self.error_manager.handle_error(res);
+                    }
                 }
                 if ui.button("JPEG").clicked() {
                     ui.close_menu();
                     let save_path = self.get_save_path();
-                    self.save_image(image::ImageFormat::Jpeg, &save_path);
+                    if let Some(save_path) = self.error_manager.handle_error(save_path) {
+                        let res = self.save_image(image::ImageFormat::Jpeg, &save_path);
+                        self.error_manager.handle_error(res);
+                    }
                 }
                 if ui.button("BMP").clicked() {
                     ui.close_menu();
                     let save_path = self.get_save_path();
-                    self.save_image(image::ImageFormat::Bmp, &save_path);
+                    if let Some(save_path) = self.error_manager.handle_error(save_path) {
+                        let res = self.save_image(image::ImageFormat::Bmp, &save_path);
+                        self.error_manager.handle_error(res);
+                    }
                 }
                 if ui.button("GIF").clicked() {
                     ui.close_menu();
                     let save_path = self.get_save_path();
-                    self.save_image(image::ImageFormat::Gif, &save_path);
+                    if let Some(save_path) = self.error_manager.handle_error(save_path) {
+                        let res = self.save_image(image::ImageFormat::Gif, &save_path);
+                        self.error_manager.handle_error(res);
+                    }
                 }
             });
             ui.menu_button("Theme", |ui| {
@@ -222,48 +234,65 @@ impl TarsierApp {
 }
 
 impl TarsierApp {
-    fn save_image(&mut self, format: image::ImageFormat, path_file: &PathBuf) {
+    fn save_image(
+        &mut self,
+        format: image::ImageFormat,
+        path_file: &PathBuf,
+    ) -> Result<(), String> {
         let mut bytes: Vec<u8> = Vec::new();
-        let write_res = self.img.write_to(&mut Cursor::new(&mut bytes), format);
-        if self.error_manager.handle_error(write_res).is_some() {
-            self.save_file(&bytes, path_file);
-        }
+        self.img
+            .write_to(&mut Cursor::new(&mut bytes), format)
+            .map_err(|e| format!("Cannot write image: {e}"))?;
+        self.save_file(&bytes, path_file)
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    fn save_file(&mut self, data: &[u8], path_file: &PathBuf) {
+    fn save_file(&mut self, data: &[u8], path_file: &PathBuf) -> Result<(), String> {
         use std::fs::File;
         use std::io::prelude::*;
 
-        let mut file = File::create(path_file).unwrap();
-        file.write_all(data).unwrap();
+        let mut file = File::create(path_file).map_err(|e| format!("Cannot create file: {e}"))?;
+        file.write_all(data)
+            .map_err(|e| format!("Cannot write file: {e}"))
     }
 
-    // TODO handle unwraps
     #[cfg(target_arch = "wasm32")]
-    fn save_file(&mut self, data: &[u8], path_file: &PathBuf) {
+    fn save_file(&mut self, data: &[u8], path_file: &PathBuf) -> Result<(), String> {
         // create blob
         use eframe::wasm_bindgen::JsCast;
         use js_sys::Array;
 
         log::info!("Saving file to {:?}", path_file);
         let filename = match path_file.file_name() {
-            Some(name) => name.to_str().unwrap(),
+            Some(name) => name.to_str().ok_or("Cannot get filename")?,
             None => "image.png",
         };
 
         let array_data = Array::new();
         array_data.push(&js_sys::Uint8Array::from(data));
-        let blob = web_sys::Blob::new_with_u8_array_sequence(&array_data).unwrap();
-        let url = web_sys::Url::create_object_url_with_blob(&blob).unwrap();
+        let blob = web_sys::Blob::new_with_u8_array_sequence(&array_data)
+            .map_err(|_| "Cannot create image data")?;
+        let url = web_sys::Url::create_object_url_with_blob(&blob)
+            .map_err(|_| "Cannot create image url data")?;
         // create link
-        let document = web_sys::window().unwrap().document().unwrap();
-        let a = document.create_element("a").unwrap();
-        a.set_attribute("href", &url).unwrap();
-        a.set_attribute("download", filename).unwrap();
+        let document = web_sys::window()
+            .ok_or("Cannot get the website window")?
+            .document()
+            .ok_or("Cannot get the website document")?;
+        let a = document
+            .create_element("a")
+            .map_err(|_| "Cannot create <a> element")?;
+        a.set_attribute("href", &url)
+            .map_err(|_| "Cannot create add href attribute")?;
+        a.set_attribute("download", filename)
+            .map_err(|_| "Cannot create add download attribute")?;
+
         // click link
-        a.dyn_ref::<web_sys::HtmlElement>().unwrap().click();
+        a.dyn_ref::<web_sys::HtmlElement>()
+            .ok_or("Cannot simulate click")?
+            .click();
         // revoke url
-        web_sys::Url::revoke_object_url(&url).unwrap();
+        web_sys::Url::revoke_object_url(&url)
+            .map_err(|_| "Cannot remove object url with revoke_object_url".into())
     }
 }
