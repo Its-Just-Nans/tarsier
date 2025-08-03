@@ -30,8 +30,8 @@ impl TarsierApp {
                 Some(rect) => {
                     let width = rect.width().abs() as u32;
                     let height = rect.height().abs() as u32;
-                    ui.label(format!("Width: {}", width));
-                    ui.label(format!("Height: {}", height));
+                    ui.label(format!("Width: {width}"));
+                    ui.label(format!("Height: {height}"));
                     ui.label(format!("Min: {:?}", rect.left_top()));
                     ui.label(format!("Max: {:?}", rect.right_bottom()));
                 }
