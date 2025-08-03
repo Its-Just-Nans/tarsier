@@ -142,7 +142,6 @@ impl TarsierApp {
                     self.selection = None;
                 }
                 ui.separator();
-
                 if ui
                     .add(egui::Button::image(ROTATE_CW_ICON))
                     .on_hover_text("Rotate 90 degrees clockwise")
@@ -172,10 +171,10 @@ impl TarsierApp {
                     self.img = self.img.flipv();
                 }
                 ui.separator();
-                let (default_color, _strong_color) = if ui.visuals().dark_mode {
-                    (Color32::LIGHT_GRAY, Color32::WHITE)
+                let (default_color, background_color) = if ui.visuals().dark_mode {
+                    (Color32::LIGHT_GRAY, Color32::DARK_BLUE)
                 } else {
-                    (Color32::DARK_GRAY, Color32::BLACK)
+                    (Color32::DARK_GRAY, Color32::LIGHT_BLUE)
                 };
                 let mut job = LayoutJob::default();
                 job.append(
@@ -191,7 +190,7 @@ impl TarsierApp {
                     0.0,
                     TextFormat {
                         color: default_color,
-                        background: Color32::from_rgb(144, 209, 255),
+                        background: background_color,
                         ..Default::default()
                     },
                 );
