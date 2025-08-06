@@ -6,7 +6,7 @@ edition = "2021"
 include = ["LICENSE", "**/*.rs", "Cargo.toml", "assets/*"]
 description = "A simple image editor"
 license = "MIT"
-rust-version = "1.81"
+rust-version = "1.88"
 homepage = "https://tarsier.n4n5.dev/"
 repository = "https://github.com/Its-Just-Nans/tarsier"
 documentation = "https://docs.rs/tarsier"
@@ -18,8 +18,8 @@ all-features = true
 targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 
 [dependencies]
-egui = "0.31"
-eframe = { version = "0.31", default-features = false, features = [
+egui = "0.32"
+eframe = { version = "0.32", default-features = false, features = [
     "accesskit",     # Make egui compatible with screen readers. NOTE: adds a lot of dependencies.
     "default_fonts", # Embed the default egui fonts.
     "glow",          # Use the glow rendering backend. Alternative: "wgpu".
@@ -32,7 +32,7 @@ log = "0.4"
 # You only need serde if you want app persistence:
 serde = { version = "1", features = ["derive"] }
 image = "0.25.5"
-egui_extras = { version = "0.31.1", features = ["all_loaders"] }
+egui_extras = { version = "0.32", features = ["all_loaders"] }
 rfd = "0.15.3"
 poll-promise = { version = "0.3", features = ["web"] }
 

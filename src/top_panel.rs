@@ -41,7 +41,7 @@ impl TarsierApp {
                     let buf = match buf {
                         Ok(v) => v,
                         Err(e) => {
-                            log::warn!("{:?}", e);
+                            log::warn!("{e:?}");
                             return Err(TarsierError::new(e.to_string()));
                         }
                     };
@@ -66,12 +66,12 @@ impl TarsierApp {
             }
 
             if ui.button("Open").clicked() {
-                ui.close_menu();
+                ui.close();
                 self.handle_file_open();
             }
             ui.menu_button("Save", |ui| {
                 if ui.button("PNG").clicked() {
-                    ui.close_menu();
+                    ui.close();
                     let save_path = self.get_save_path();
                     if let Some(save_path) = self.error_manager.handle_error(save_path) {
                         let res = self.save_image(image::ImageFormat::Png, &save_path);
@@ -79,7 +79,7 @@ impl TarsierApp {
                     }
                 }
                 if ui.button("JPEG").clicked() {
-                    ui.close_menu();
+                    ui.close();
                     let save_path = self.get_save_path();
                     if let Some(save_path) = self.error_manager.handle_error(save_path) {
                         let res = self.save_image(image::ImageFormat::Jpeg, &save_path);
@@ -87,7 +87,7 @@ impl TarsierApp {
                     }
                 }
                 if ui.button("BMP").clicked() {
-                    ui.close_menu();
+                    ui.close();
                     let save_path = self.get_save_path();
                     if let Some(save_path) = self.error_manager.handle_error(save_path) {
                         let res = self.save_image(image::ImageFormat::Bmp, &save_path);
@@ -95,7 +95,7 @@ impl TarsierApp {
                     }
                 }
                 if ui.button("GIF").clicked() {
-                    ui.close_menu();
+                    ui.close();
                     let save_path = self.get_save_path();
                     if let Some(save_path) = self.error_manager.handle_error(save_path) {
                         let res = self.save_image(image::ImageFormat::Gif, &save_path);
@@ -125,7 +125,7 @@ impl TarsierApp {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             // The top panel is often a good place for a menu bar:
 
-            egui::menu::bar(ui, |ui| {
+            egui::MenuBar::new().ui(ui, |ui| {
                 self.menu_file(ui);
                 ui.menu_button("Windows", |ui| {
                     ui.checkbox(&mut self.windows.selection_window, "Selection");
@@ -207,7 +207,7 @@ impl TarsierApp {
                         "Drawing",
                     );
                     if self.image_operations.mode != previous_state {
-                        ui.close_menu();
+                        ui.close();
                         if self.image_operations.mode == EditMode::Drawing {
                             self.selection = None;
                         }
