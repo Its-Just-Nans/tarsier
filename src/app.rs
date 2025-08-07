@@ -163,9 +163,24 @@ impl eframe::App for TarsierApp {
         self.windows(ctx);
         self.error_manager.show(ctx);
         self.settings.show(ctx, |ui| {
+            ui.separator();
+            ui.horizontal(|ui| {
+                ui.label(format!("{} settings", "Windows"));
+            });
             ui.checkbox(&mut self.windows.selection_window, "Selection");
             ui.checkbox(&mut self.windows.right_panel, "Right Panel");
-            if ui.button("Default svg").clicked() {
+
+            ui.separator();
+            ui.horizontal(|ui| {
+                ui.label(format!("{} settings", self.error_manager.title()));
+                ui.button("⟳").clicked().then(|| {
+                    self.error_manager = Default::default();
+                });
+            });
+            self.error_manager.show_settings(ui);
+
+            ui.separator();
+            if ui.button("Default image").clicked() {
                 self.base_img = Self::load_default_image();
                 self.img = Self::load_default_image();
             }

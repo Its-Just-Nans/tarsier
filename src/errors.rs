@@ -1,5 +1,7 @@
 //! Error handling
-use std::{io, sync::Arc};
+use std::{io, string::FromUtf8Error, sync::Arc};
+
+use egui::Ui;
 
 /// Type for error
 #[derive(Default, Debug, Clone)]
@@ -73,6 +75,16 @@ impl From<io::Error> for AppError {
     }
 }
 
+impl From<FromUtf8Error> for AppError {
+    fn from(error: FromUtf8Error) -> Self {
+        Self {
+            message: error.to_string(),
+            source: Some(Arc::new(error)),
+            error_type: ErrorType::Normal,
+        }
+    }
+}
+
 impl From<image::ImageError> for AppError {
     fn from(error: image::ImageError) -> Self {
         Self {
@@ -123,6 +135,11 @@ impl ErrorManager {
         }
     }
 
+    /// Errors Title
+    pub fn title(&self) -> &'static str {
+        "Error window"
+    }
+
     /// Show errors to ui
     pub fn show(&mut self, ctx: &egui::Context) {
         if !self.was_open && !self.errors.is_empty() {
@@ -139,5 +156,12 @@ impl ErrorManager {
             self.errors.clear();
         }
         self.was_open = self.is_open;
+    }
+
+    /// Show settings
+    pub fn show_settings(&mut self, ui: &mut Ui) {
+        if ui.checkbox(&mut self.is_open, "Right Panel").changed() {
+            self.errors.clear();
+        }
     }
 }
