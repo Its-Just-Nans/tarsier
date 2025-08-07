@@ -5,7 +5,7 @@ use crate::{
     errors::{ErrorManager, TarsierError},
     file::File,
     side_panel::ImageOperations,
-    windows::WindowsData,
+    windows::WindowsManager,
 };
 use egui::Pos2;
 use image::ImageReader;
@@ -49,8 +49,8 @@ pub struct TarsierApp {
     /// Path to save the image
     pub save_path: Option<PathBuf>,
 
-    /// Informations about image
-    pub windows: WindowsData,
+    /// Windows manager
+    pub windows: WindowsManager,
 
     /// Error_manager
     #[serde(skip)]
@@ -77,7 +77,7 @@ impl Default for TarsierApp {
             save_path: None,
             dropped_files: Default::default(),
             error_manager: Default::default(),
-            windows: WindowsData::new(),
+            windows: Default::default(),
             file_upload: None,
         }
     }
@@ -127,6 +127,9 @@ impl TarsierApp {
         };
         Ok(res)
     }
+    /// Get a new path
+    /// # Errors
+    /// No error in wasm
     #[cfg(target_arch = "wasm32")]
     pub fn get_save_path(&mut self) -> Result<std::path::PathBuf, String> {
         Ok(std::path::PathBuf::new())

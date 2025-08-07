@@ -2,8 +2,8 @@
 use crate::TarsierApp;
 
 /// Togglers for windows
-#[derive(Default, serde::Deserialize, serde::Serialize)]
-pub struct WindowsData {
+#[derive(serde::Deserialize, serde::Serialize)]
+pub struct WindowsManager {
     /// Right panel toggle
     pub right_panel: bool,
     /// Selection windows toggle
@@ -12,9 +12,9 @@ pub struct WindowsData {
     pub error_window: bool,
 }
 
-impl WindowsData {
+impl Default for WindowsManager {
     /// Create a new WindowsData
-    pub fn new() -> Self {
+    fn default() -> Self {
         Self {
             right_panel: true,
             selection_window: true,

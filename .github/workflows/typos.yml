@@ -7,6 +7,11 @@
 name: Spell Check
 on: [push, pull_request, workflow_dispatch]
 
+# Allow one concurrent deployment
+concurrency:
+  group: "typos"
+  cancel-in-progress: true
+
 jobs:
   run:
     name: Spell Check

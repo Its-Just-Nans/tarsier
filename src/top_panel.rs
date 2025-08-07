@@ -18,6 +18,7 @@ const FLIP_H_ICON: ImageSource<'_> = egui::include_image!("../assets/flip_h.png"
 const FLIP_V_ICON: ImageSource<'_> = egui::include_image!("../assets/flip_v.png");
 
 impl TarsierApp {
+    /// Handle the file
     #[cfg(target_arch = "wasm32")]
     pub fn handle_file_open(&mut self) {
         self.file_upload = Some(Promise::spawn_local(async {
