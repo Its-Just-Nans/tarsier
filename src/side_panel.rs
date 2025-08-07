@@ -4,7 +4,7 @@ use std::fmt::Display;
 use egui::{ImageSource, Ui};
 use image::{ColorType, DynamicImage, GenericImage, GenericImageView, Pixel};
 
-use crate::{side_panel, TarsierApp};
+use crate::TarsierApp;
 
 /// Crop icon
 const CROP_ICON: ImageSource<'_> = egui::include_image!("../assets/crop.png");

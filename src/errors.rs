@@ -2,17 +2,18 @@
 use std::{io, sync::Arc};
 
 /// Type for error
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 enum ErrorType {
     /// Normal error
+    #[default]
     Normal,
     /// Fake error
     Fake,
 }
 
-/// TarsierError object
-#[derive(Debug)]
-pub struct TarsierError {
+/// AppError object
+#[derive(Default, Debug)]
+pub struct AppError {
     /// Error message
     pub message: String,
     /// Error source
@@ -21,7 +22,7 @@ pub struct TarsierError {
     error_type: ErrorType,
 }
 
-impl Clone for TarsierError {
+impl Clone for AppError {
     fn clone(&self) -> Self {
         Self {
             message: self.message.clone(),
@@ -31,8 +32,8 @@ impl Clone for TarsierError {
     }
 }
 
-impl TarsierError {
-    /// Create new TarsierError
+impl AppError {
+    /// Create new AppError
     pub fn new(message: String) -> Self {
         Self {
             message,
@@ -56,13 +57,13 @@ impl TarsierError {
     }
 }
 
-impl From<String> for TarsierError {
+impl From<String> for AppError {
     fn from(message: String) -> Self {
         Self::new(message)
     }
 }
 
-impl From<io::Error> for TarsierError {
+impl From<io::Error> for AppError {
     fn from(error: io::Error) -> Self {
         Self {
             message: error.to_string(),
@@ -72,7 +73,7 @@ impl From<io::Error> for TarsierError {
     }
 }
 
-impl From<image::ImageError> for TarsierError {
+impl From<image::ImageError> for AppError {
     fn from(error: image::ImageError) -> Self {
         Self {
             message: error.to_string(),
@@ -86,7 +87,13 @@ impl From<image::ImageError> for TarsierError {
 #[derive(Debug, Default)]
 pub struct ErrorManager {
     /// List of errors
-    pub errors: Vec<TarsierError>,
+    pub errors: Vec<AppError>,
+
+    /// Check if it is open
+    pub is_open: bool,
+
+    /// Check if it was open
+    pub was_open: bool,
 }
 
 impl ErrorManager {
@@ -98,7 +105,7 @@ impl ErrorManager {
     }
 
     /// Add an error
-    pub fn add_error(&mut self, error: TarsierError) {
+    pub fn add_error(&mut self, error: AppError) {
         if error.is_fake() {
             return;
         }
@@ -106,7 +113,7 @@ impl ErrorManager {
     }
 
     /// Handle an error
-    pub fn handle_error<T>(&mut self, error: Result<T, impl Into<TarsierError>>) -> Option<T> {
+    pub fn handle_error<T>(&mut self, error: Result<T, impl Into<AppError>>) -> Option<T> {
         match error {
             Ok(value) => Some(value),
             Err(e) => {
@@ -114,5 +121,23 @@ impl ErrorManager {
                 None
             }
         }
+    }
+
+    /// Show errors to ui
+    pub fn show(&mut self, ctx: &egui::Context) {
+        if !self.was_open && !self.errors.is_empty() {
+            self.is_open = true;
+        }
+        egui::Window::new("Errors")
+            .open(&mut self.is_open)
+            .show(ctx, |ui| {
+                for error in &self.errors {
+                    ui.label(error.message.clone());
+                }
+            });
+        if !self.is_open {
+            self.errors.clear();
+        }
+        self.was_open = self.is_open;
     }
 }

@@ -2,15 +2,11 @@
 use std::{io::Cursor, path::PathBuf};
 
 use crate::{
-    errors::{ErrorManager, TarsierError},
-    file::File,
-    settings::Settings,
-    side_panel::ImageOperations,
-    windows::WindowsManager,
+    errors::ErrorManager, file_handler::FileHandler, settings::Settings,
+    side_panel::ImageOperations, windows::WindowsManager,
 };
 use egui::Pos2;
-use image::ImageReader;
-use poll_promise::Promise;
+use image::{DynamicImage, ImageReader};
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -32,14 +28,6 @@ pub struct TarsierApp {
     #[serde(skip)]
     pub start_selection: Pos2,
 
-    /// Dropped_files handler
-    #[serde(skip)]
-    pub dropped_files: Vec<egui::DroppedFile>,
-
-    /// File upload handling
-    #[serde(skip)]
-    pub file_upload: Option<Promise<Result<File, TarsierError>>>,
-
     /// Is currently selecting
     #[serde(skip)]
     pub is_selecting: bool,
@@ -59,18 +47,16 @@ pub struct TarsierApp {
 
     /// Settings Ui
     pub settings: Settings,
+
+    /// File Handler
+    pub file_handler: FileHandler,
 }
 
 const ASSET: &[u8] = include_bytes!("../assets/icon-1024.png");
 
 impl Default for TarsierApp {
     fn default() -> Self {
-        let img = ImageReader::new(Cursor::new(ASSET))
-            .with_guessed_format()
-            .unwrap()
-            .decode()
-            .unwrap();
-
+        let img = Self::load_default_image();
         Self {
             base_img: img.clone(),
             img,
@@ -79,11 +65,10 @@ impl Default for TarsierApp {
             is_selecting: false,
             image_operations: Default::default(),
             save_path: None,
-            dropped_files: Default::default(),
             error_manager: Default::default(),
             windows: Default::default(),
-            file_upload: None,
             settings: Default::default(),
+            file_handler: Default::default(),
         }
     }
 }
@@ -102,9 +87,16 @@ impl TarsierApp {
 
         Default::default()
     }
-}
 
-impl TarsierApp {
+    /// Load the default image
+    fn load_default_image() -> DynamicImage {
+        ImageReader::new(Cursor::new(ASSET))
+            .with_guessed_format()
+            .unwrap()
+            .decode()
+            .unwrap()
+    }
+
     /// Get the save path
     /// # Errors
     /// Failed if the input is wrong
@@ -156,13 +148,27 @@ impl eframe::App for TarsierApp {
         }
         self.central_panel(ctx);
 
-        self.handle_files(ctx);
+        match self.file_handler.handle_files(ctx) {
+            Ok(Some(img)) => {
+                self.base_img = img.clone();
+                self.img = img;
+                self.selection = None;
+            }
+            Ok(None) => {}
+            Err(err) => {
+                self.error_manager.add_error(err);
+            }
+        }
 
         self.windows(ctx);
+        self.error_manager.show(ctx);
         self.settings.show(ctx, |ui| {
             ui.checkbox(&mut self.windows.selection_window, "Selection");
             ui.checkbox(&mut self.windows.right_panel, "Right Panel");
-            ui.checkbox(&mut self.windows.error_window, "Error Panel");
+            if ui.button("Default svg").clicked() {
+                self.base_img = Self::load_default_image();
+                self.img = Self::load_default_image();
+            }
         });
     }
 }

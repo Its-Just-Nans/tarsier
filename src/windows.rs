@@ -8,8 +8,6 @@ pub struct WindowsManager {
     pub right_panel: bool,
     /// Selection windows toggle
     pub selection_window: bool,
-    /// Error window toggle
-    pub error_window: bool,
 }
 
 impl Default for WindowsManager {
@@ -18,7 +16,6 @@ impl Default for WindowsManager {
         Self {
             right_panel: true,
             selection_window: true,
-            error_window: true,
         }
     }
 }
@@ -27,7 +24,6 @@ impl TarsierApp {
     /// Show the windows
     pub fn windows(&mut self, ctx: &egui::Context) {
         self.selection_window(ctx);
-        self.error_window(ctx);
     }
 
     /// Display the selection windows
@@ -45,17 +41,6 @@ impl TarsierApp {
                 }
                 None => {
                     ui.label("No selection");
-                }
-            });
-    }
-
-    /// Display the error windows
-    pub fn error_window(&mut self, ctx: &egui::Context) {
-        egui::Window::new("Errors")
-            .open(&mut self.windows.error_window)
-            .show(ctx, |ui| {
-                for error in &self.error_manager.errors {
-                    ui.label(error.message.clone());
                 }
             });
     }

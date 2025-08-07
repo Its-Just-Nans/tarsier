@@ -2,9 +2,8 @@
 use std::{io::Cursor, path::PathBuf};
 
 use egui::{text::LayoutJob, Color32, ImageSource, TextFormat, ThemePreference};
-use poll_promise::Promise;
 
-use crate::{errors::TarsierError, file::File, side_panel::EditMode, TarsierApp};
+use crate::{side_panel::EditMode, TarsierApp};
 
 /// Reset icon
 const RESET_ICON: ImageSource<'_> = egui::include_image!("../assets/x-circle.png");
@@ -18,51 +17,6 @@ const FLIP_H_ICON: ImageSource<'_> = egui::include_image!("../assets/flip_h.png"
 const FLIP_V_ICON: ImageSource<'_> = egui::include_image!("../assets/flip_v.png");
 
 impl TarsierApp {
-    /// Handle the file
-    #[cfg(target_arch = "wasm32")]
-    pub fn handle_file_open(&mut self) {
-        self.file_upload = Some(Promise::spawn_local(async {
-            let file_selected = rfd::AsyncFileDialog::new().pick_file().await;
-            if let Some(curr_file) = file_selected {
-                let buf = curr_file.read().await;
-                return Ok(File {
-                    path: curr_file.file_name(),
-                    data: buf,
-                });
-            }
-            // no file selected
-            Err(TarsierError::new_fake(
-                "Upload: no file Selected".to_string(),
-            ))
-        }));
-    }
-
-    /// Handle the file
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn handle_file_open(&mut self) {
-        self.file_upload = Some(Promise::spawn_thread("slow", move || {
-            if let Some(path_buf) = rfd::FileDialog::new().pick_file() {
-                // read file as string
-                if let Some(path) = path_buf.to_str() {
-                    let path = path.to_string();
-                    let buf = std::fs::read(path.clone());
-                    let buf = match buf {
-                        Ok(v) => v,
-                        Err(e) => {
-                            log::warn!("{e:?}");
-                            return Err(TarsierError::new(e.to_string()));
-                        }
-                    };
-                    return Ok(File { path, data: buf });
-                }
-            }
-            // no file selected
-            Err(TarsierError::new_fake(
-                "Upload: no file Selected".to_string(),
-            ))
-        }))
-    }
-
     /// Show the file menu
     pub fn menu_file(&mut self, ctx: &egui::Context, ui: &mut egui::Ui) {
         // NOTE: no File->Quit on web pages!
@@ -77,7 +31,7 @@ impl TarsierApp {
 
             if ui.button("Open").clicked() {
                 ui.close();
-                self.handle_file_open();
+                self.file_handler.handle_file_open();
             }
             ui.menu_button("Save", |ui| {
                 if ui.button("PNG").clicked() {

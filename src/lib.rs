@@ -14,7 +14,7 @@
 mod app;
 mod central_panel;
 mod errors;
-mod file;
+mod file_handler;
 mod settings;
 mod side_panel;
 mod top_panel;
