@@ -1,10 +1,10 @@
 //! Side panel
 use std::fmt::Display;
 
-use egui::ImageSource;
+use egui::{ImageSource, Ui};
 use image::{ColorType, DynamicImage, GenericImage, GenericImageView, Pixel};
 
-use crate::TarsierApp;
+use crate::{side_panel, TarsierApp};
 
 /// Crop icon
 const CROP_ICON: ImageSource<'_> = egui::include_image!("../assets/crop.png");
@@ -84,186 +84,191 @@ impl Default for ImageOperations {
 }
 
 impl TarsierApp {
+    /// Side panel content
+    fn side_panel_content(&mut self, ui: &mut Ui) {
+        ui.heading("Image Info");
+        ui.label(format!("Size: {}x{}", self.img.width(), self.img.height()));
+        ui.label(format!("Format: {:?}", self.img.color()));
+
+        ui.separator();
+        ui.label("Convert");
+        egui::ComboBox::from_id_salt("convert_box")
+            .selected_text(format!("{:?}", self.image_operations.other.convert_to))
+            .show_ui(ui, |ui| {
+                ui.selectable_value(
+                    &mut self.image_operations.other.convert_to,
+                    ColorType::L8,
+                    format!("{:?}", ColorType::L8),
+                );
+                ui.selectable_value(
+                    &mut self.image_operations.other.convert_to,
+                    ColorType::L16,
+                    format!("{:?}", ColorType::L16),
+                );
+                ui.selectable_value(
+                    &mut self.image_operations.other.convert_to,
+                    ColorType::La8,
+                    format!("{:?}", ColorType::La8),
+                );
+                ui.selectable_value(
+                    &mut self.image_operations.other.convert_to,
+                    ColorType::La16,
+                    format!("{:?}", ColorType::La16),
+                );
+                ui.selectable_value(
+                    &mut self.image_operations.other.convert_to,
+                    ColorType::Rgb8,
+                    format!("{:?}", ColorType::Rgb8),
+                );
+                ui.selectable_value(
+                    &mut self.image_operations.other.convert_to,
+                    ColorType::Rgb16,
+                    format!("{:?}", ColorType::Rgb16),
+                );
+                ui.selectable_value(
+                    &mut self.image_operations.other.convert_to,
+                    ColorType::Rgb32F,
+                    format!("{:?}", ColorType::Rgb32F),
+                );
+                ui.selectable_value(
+                    &mut self.image_operations.other.convert_to,
+                    ColorType::Rgba8,
+                    format!("{:?}", ColorType::Rgba8),
+                );
+                ui.selectable_value(
+                    &mut self.image_operations.other.convert_to,
+                    ColorType::Rgba16,
+                    format!("{:?}", ColorType::Rgba16),
+                );
+                ui.selectable_value(
+                    &mut self.image_operations.other.convert_to,
+                    ColorType::Rgba32F,
+                    format!("{:?}", ColorType::Rgba32F),
+                );
+            });
+        if ui.button("Convert").clicked() {
+            self.img = match self.image_operations.other.convert_to {
+                ColorType::L8 => self.img.to_luma8().into(),
+                ColorType::L16 => self.img.to_luma16().into(),
+                ColorType::La8 => self.img.to_luma_alpha8().into(),
+                ColorType::La16 => self.img.to_luma_alpha16().into(),
+                ColorType::Rgb8 => self.img.to_rgb8().into(),
+                ColorType::Rgb16 => self.img.to_rgb16().into(),
+                ColorType::Rgb32F => self.img.to_rgb32f().into(),
+                ColorType::Rgba8 => self.img.to_rgba8().into(),
+                ColorType::Rgba16 => self.img.to_rgba16().into(),
+                ColorType::Rgba32F => self.img.to_rgba32f().into(),
+                _ => self.img.to_rgba8().into(),
+            }
+        }
+
+        let current_selection = self.selection.map(|selection| {
+            (
+                selection.min.x as u32,
+                selection.min.y as u32,
+                selection.max.x as u32,
+                selection.max.y as u32,
+            )
+        });
+
+        ui.separator();
+        self.button_outline(ui);
+        ui.separator();
+        self.button_detection(ui);
+        ui.separator();
+        self.button_grayscale(ui, &current_selection);
+        ui.separator();
+        self.button_invert(ui, &current_selection);
+        ui.separator();
+        self.button_blur(ui, &current_selection);
+        ui.separator();
+        ui.add(egui::Slider::new(
+            &mut self.image_operations.hue_rotation,
+            0..=360,
+        ));
+
+        if ui.button("hue rotate").clicked() {
+            match current_selection {
+                Some(selection) => {
+                    let cropped_img = self.img.crop(
+                        selection.0,
+                        selection.1,
+                        selection.2 - selection.0,
+                        selection.3 - selection.1,
+                    );
+                    let inner = cropped_img.huerotate(self.image_operations.hue_rotation);
+                    let res = self.img.copy_from(&inner, selection.0, selection.1);
+                    self.error_manager.handle_error(res);
+                }
+                None => {
+                    self.img = self.img.huerotate(self.image_operations.hue_rotation);
+                }
+            }
+        }
+        ui.separator();
+        ui.add(egui::Slider::new(
+            &mut self.image_operations.brighten,
+            -100..=100,
+        ));
+        if ui.button("brighten").clicked() {
+            match current_selection {
+                Some(selection) => {
+                    let cropped_img = self.img.crop(
+                        selection.0,
+                        selection.1,
+                        selection.2 - selection.0,
+                        selection.3 - selection.1,
+                    );
+                    let inner = cropped_img.brighten(self.image_operations.brighten);
+                    let res = self.img.copy_from(&inner, selection.0, selection.1);
+                    self.error_manager.handle_error(res);
+                }
+                None => {
+                    self.img = self.img.brighten(self.image_operations.brighten);
+                }
+            }
+        }
+        ui.separator();
+        ui.add(egui::Slider::new(
+            &mut self.image_operations.contrast,
+            -50.0..=50.0,
+        ));
+        if ui.button("contrast").clicked() {
+            match current_selection {
+                Some(selection) => {
+                    let cropped_img = self.img.crop(
+                        selection.0,
+                        selection.1,
+                        selection.2 - selection.0,
+                        selection.3 - selection.1,
+                    );
+                    let inner = cropped_img.adjust_contrast(self.image_operations.contrast);
+                    let res = self.img.copy_from(&inner, selection.0, selection.1);
+                    self.error_manager.handle_error(res);
+                }
+                None => {
+                    self.img = self.img.adjust_contrast(self.image_operations.contrast);
+                }
+            }
+        }
+        ui.separator();
+        if self.image_operations.mode == EditMode::Drawing {
+            self.button_drawing(ui);
+            ui.separator();
+        } else {
+            self.button_crop(ui);
+        }
+
+        ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
+            egui::warn_if_debug_build(ui);
+        });
+    }
+
     /// Show the side panel
     pub fn side_panel(&mut self, ctx: &egui::Context) {
-        egui::SidePanel::right("my_panel").show(ctx, |ui| {
-            ui.heading("Image Info");
-            ui.label(format!("Size: {}x{}", self.img.width(), self.img.height()));
-            ui.label(format!("Format: {:?}", self.img.color()));
-
-            ui.separator();
-            ui.label("Convert");
-            egui::ComboBox::from_id_salt("convert_box")
-                .selected_text(format!("{:?}", self.image_operations.other.convert_to))
-                .show_ui(ui, |ui| {
-                    ui.selectable_value(
-                        &mut self.image_operations.other.convert_to,
-                        ColorType::L8,
-                        format!("{:?}", ColorType::L8),
-                    );
-                    ui.selectable_value(
-                        &mut self.image_operations.other.convert_to,
-                        ColorType::L16,
-                        format!("{:?}", ColorType::L16),
-                    );
-                    ui.selectable_value(
-                        &mut self.image_operations.other.convert_to,
-                        ColorType::La8,
-                        format!("{:?}", ColorType::La8),
-                    );
-                    ui.selectable_value(
-                        &mut self.image_operations.other.convert_to,
-                        ColorType::La16,
-                        format!("{:?}", ColorType::La16),
-                    );
-                    ui.selectable_value(
-                        &mut self.image_operations.other.convert_to,
-                        ColorType::Rgb8,
-                        format!("{:?}", ColorType::Rgb8),
-                    );
-                    ui.selectable_value(
-                        &mut self.image_operations.other.convert_to,
-                        ColorType::Rgb16,
-                        format!("{:?}", ColorType::Rgb16),
-                    );
-                    ui.selectable_value(
-                        &mut self.image_operations.other.convert_to,
-                        ColorType::Rgb32F,
-                        format!("{:?}", ColorType::Rgb32F),
-                    );
-                    ui.selectable_value(
-                        &mut self.image_operations.other.convert_to,
-                        ColorType::Rgba8,
-                        format!("{:?}", ColorType::Rgba8),
-                    );
-                    ui.selectable_value(
-                        &mut self.image_operations.other.convert_to,
-                        ColorType::Rgba16,
-                        format!("{:?}", ColorType::Rgba16),
-                    );
-                    ui.selectable_value(
-                        &mut self.image_operations.other.convert_to,
-                        ColorType::Rgba32F,
-                        format!("{:?}", ColorType::Rgba32F),
-                    );
-                });
-            if ui.button("Convert").clicked() {
-                self.img = match self.image_operations.other.convert_to {
-                    ColorType::L8 => self.img.to_luma8().into(),
-                    ColorType::L16 => self.img.to_luma16().into(),
-                    ColorType::La8 => self.img.to_luma_alpha8().into(),
-                    ColorType::La16 => self.img.to_luma_alpha16().into(),
-                    ColorType::Rgb8 => self.img.to_rgb8().into(),
-                    ColorType::Rgb16 => self.img.to_rgb16().into(),
-                    ColorType::Rgb32F => self.img.to_rgb32f().into(),
-                    ColorType::Rgba8 => self.img.to_rgba8().into(),
-                    ColorType::Rgba16 => self.img.to_rgba16().into(),
-                    ColorType::Rgba32F => self.img.to_rgba32f().into(),
-                    _ => self.img.to_rgba8().into(),
-                }
-            }
-
-            let current_selection = self.selection.map(|selection| {
-                (
-                    selection.min.x as u32,
-                    selection.min.y as u32,
-                    selection.max.x as u32,
-                    selection.max.y as u32,
-                )
-            });
-
-            ui.separator();
-            self.button_outline(ui);
-            ui.separator();
-            self.button_detection(ui);
-            ui.separator();
-            self.button_grayscale(ui, &current_selection);
-            ui.separator();
-            self.button_invert(ui, &current_selection);
-            ui.separator();
-            self.button_blur(ui, &current_selection);
-            ui.separator();
-            ui.add(egui::Slider::new(
-                &mut self.image_operations.hue_rotation,
-                0..=360,
-            ));
-
-            if ui.button("hue rotate").clicked() {
-                match current_selection {
-                    Some(selection) => {
-                        let cropped_img = self.img.crop(
-                            selection.0,
-                            selection.1,
-                            selection.2 - selection.0,
-                            selection.3 - selection.1,
-                        );
-                        let inner = cropped_img.huerotate(self.image_operations.hue_rotation);
-                        let res = self.img.copy_from(&inner, selection.0, selection.1);
-                        self.error_manager.handle_error(res);
-                    }
-                    None => {
-                        self.img = self.img.huerotate(self.image_operations.hue_rotation);
-                    }
-                }
-            }
-            ui.separator();
-            ui.add(egui::Slider::new(
-                &mut self.image_operations.brighten,
-                -100..=100,
-            ));
-            if ui.button("brighten").clicked() {
-                match current_selection {
-                    Some(selection) => {
-                        let cropped_img = self.img.crop(
-                            selection.0,
-                            selection.1,
-                            selection.2 - selection.0,
-                            selection.3 - selection.1,
-                        );
-                        let inner = cropped_img.brighten(self.image_operations.brighten);
-                        let res = self.img.copy_from(&inner, selection.0, selection.1);
-                        self.error_manager.handle_error(res);
-                    }
-                    None => {
-                        self.img = self.img.brighten(self.image_operations.brighten);
-                    }
-                }
-            }
-            ui.separator();
-            ui.add(egui::Slider::new(
-                &mut self.image_operations.contrast,
-                -50.0..=50.0,
-            ));
-            if ui.button("contrast").clicked() {
-                match current_selection {
-                    Some(selection) => {
-                        let cropped_img = self.img.crop(
-                            selection.0,
-                            selection.1,
-                            selection.2 - selection.0,
-                            selection.3 - selection.1,
-                        );
-                        let inner = cropped_img.adjust_contrast(self.image_operations.contrast);
-                        let res = self.img.copy_from(&inner, selection.0, selection.1);
-                        self.error_manager.handle_error(res);
-                    }
-                    None => {
-                        self.img = self.img.adjust_contrast(self.image_operations.contrast);
-                    }
-                }
-            }
-            ui.separator();
-            if self.image_operations.mode == EditMode::Drawing {
-                self.button_drawing(ui);
-                ui.separator();
-            } else {
-                self.button_crop(ui);
-            }
-
-            ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
-                egui::warn_if_debug_build(ui);
-            });
-        });
+        egui::SidePanel::right("my_panel")
+            .min_width(self.settings.min_width_sidebar)
+            .show(ctx, |side_panel_ui| self.side_panel_content(side_panel_ui));
     }
 
     /// Button to draw settings

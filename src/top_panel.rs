@@ -64,14 +64,15 @@ impl TarsierApp {
     }
 
     /// Show the file menu
-    pub fn menu_file(&mut self, ui: &mut egui::Ui) {
+    pub fn menu_file(&mut self, ctx: &egui::Context, ui: &mut egui::Ui) {
         // NOTE: no File->Quit on web pages!
         ui.menu_button("File", |ui| {
-            #[cfg(not(target_arch = "wasm32"))]
-            {
-                if ui.button("Quit").clicked() {
-                    ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
-                }
+            let is_web = cfg!(target_arch = "wasm32");
+            if !is_web && ui.button("Quit").clicked() {
+                ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+            }
+            if ui.button("Settings").clicked() {
+                self.settings.open = true;
             }
 
             if ui.button("Open").clicked() {
@@ -136,12 +137,7 @@ impl TarsierApp {
             // The top panel is often a good place for a menu bar:
 
             egui::MenuBar::new().ui(ui, |ui| {
-                self.menu_file(ui);
-                ui.menu_button("Windows", |ui| {
-                    ui.checkbox(&mut self.windows.selection_window, "Selection");
-                    ui.checkbox(&mut self.windows.right_panel, "Right Panel");
-                    ui.checkbox(&mut self.windows.error_window, "Error Panel");
-                });
+                self.menu_file(ctx, ui);
                 ui.separator();
                 if ui
                     .add(egui::Button::image(RESET_ICON))

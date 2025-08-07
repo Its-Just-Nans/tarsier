@@ -4,6 +4,7 @@ use std::{io::Cursor, path::PathBuf};
 use crate::{
     errors::{ErrorManager, TarsierError},
     file::File,
+    settings::Settings,
     side_panel::ImageOperations,
     windows::WindowsManager,
 };
@@ -55,6 +56,9 @@ pub struct TarsierApp {
     /// Error_manager
     #[serde(skip)]
     pub error_manager: ErrorManager,
+
+    /// Settings Ui
+    pub settings: Settings,
 }
 
 const ASSET: &[u8] = include_bytes!("../assets/icon-1024.png");
@@ -79,6 +83,7 @@ impl Default for TarsierApp {
             error_manager: Default::default(),
             windows: Default::default(),
             file_upload: None,
+            settings: Default::default(),
         }
     }
 }
@@ -154,5 +159,10 @@ impl eframe::App for TarsierApp {
         self.handle_files(ctx);
 
         self.windows(ctx);
+        self.settings.show(ctx, |ui| {
+            ui.checkbox(&mut self.windows.selection_window, "Selection");
+            ui.checkbox(&mut self.windows.right_panel, "Right Panel");
+            ui.checkbox(&mut self.windows.error_window, "Error Panel");
+        });
     }
 }
