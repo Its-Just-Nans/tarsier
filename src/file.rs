@@ -1,13 +1,18 @@
+//! File handling
 use image::ImageReader;
 
 use crate::TarsierApp;
 
+/// File object
 pub struct File {
+    /// File path
     pub path: String,
+    /// File data
     pub data: Vec<u8>,
 }
 
 impl TarsierApp {
+    /// Handle the files
     pub fn handle_files(&mut self, ctx: &egui::Context) {
         if let Some(result) = &self.file_upload {
             match &result.ready() {

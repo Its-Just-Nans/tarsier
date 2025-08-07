@@ -1,13 +1,19 @@
+//! Windows to display in Tarsier
 use crate::TarsierApp;
 
+/// Togglers for windows
 #[derive(Default, serde::Deserialize, serde::Serialize)]
 pub struct WindowsData {
+    /// Right panel toggle
     pub right_panel: bool,
+    /// Selection windows toggle
     pub selection_window: bool,
+    /// Error window toggle
     pub error_window: bool,
 }
 
 impl WindowsData {
+    /// Create a new WindowsData
     pub fn new() -> Self {
         Self {
             right_panel: true,
@@ -18,11 +24,13 @@ impl WindowsData {
 }
 
 impl TarsierApp {
+    /// Show the windows
     pub fn windows(&mut self, ctx: &egui::Context) {
         self.selection_window(ctx);
         self.error_window(ctx);
     }
 
+    /// Display the selection windows
     pub fn selection_window(&mut self, ctx: &egui::Context) {
         egui::Window::new("Selection")
             .open(&mut self.windows.selection_window)
@@ -41,6 +49,7 @@ impl TarsierApp {
             });
     }
 
+    /// Display the error windows
     pub fn error_window(&mut self, ctx: &egui::Context) {
         egui::Window::new("Errors")
             .open(&mut self.windows.error_window)

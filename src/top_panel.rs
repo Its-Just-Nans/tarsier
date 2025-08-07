@@ -1,3 +1,4 @@
+//! Top panel
 use std::{io::Cursor, path::PathBuf};
 
 use egui::{text::LayoutJob, Color32, ImageSource, TextFormat, ThemePreference};
@@ -5,10 +6,15 @@ use poll_promise::Promise;
 
 use crate::{errors::TarsierError, file::File, side_panel::EditMode, TarsierApp};
 
+/// Reset icon
 const RESET_ICON: ImageSource<'_> = egui::include_image!("../assets/x-circle.png");
+/// Rotate icon
 const ROTATE_CCW_ICON: ImageSource<'_> = egui::include_image!("../assets/rotate_ccw.png");
+/// Rotate icon inverse
 const ROTATE_CW_ICON: ImageSource<'_> = egui::include_image!("../assets/rotate_cw.png");
+/// Flip horizontal icon
 const FLIP_H_ICON: ImageSource<'_> = egui::include_image!("../assets/flip_h.png");
+/// Flip vertical icon
 const FLIP_V_ICON: ImageSource<'_> = egui::include_image!("../assets/flip_v.png");
 
 impl TarsierApp {
@@ -30,6 +36,7 @@ impl TarsierApp {
         }));
     }
 
+    /// Handle the file
     #[cfg(not(target_arch = "wasm32"))]
     pub fn handle_file_open(&mut self) {
         self.file_upload = Some(Promise::spawn_thread("slow", move || {
@@ -55,6 +62,7 @@ impl TarsierApp {
         }))
     }
 
+    /// Show the file menu
     pub fn menu_file(&mut self, ui: &mut egui::Ui) {
         // NOTE: no File->Quit on web pages!
         ui.menu_button("File", |ui| {
@@ -121,6 +129,7 @@ impl TarsierApp {
         });
     }
 
+    /// Show the top panel
     pub fn top_panel(&mut self, ctx: &egui::Context) {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             // The top panel is often a good place for a menu bar:
@@ -233,6 +242,7 @@ impl TarsierApp {
 }
 
 impl TarsierApp {
+    /// Save the current image
     fn save_image(
         &mut self,
         format: image::ImageFormat,
@@ -245,6 +255,7 @@ impl TarsierApp {
         self.save_file(&bytes, path_file)
     }
 
+    /// Save the data to a file
     #[cfg(not(target_arch = "wasm32"))]
     fn save_file(&mut self, data: &[u8], path_file: &PathBuf) -> Result<(), String> {
         use std::fs::File;

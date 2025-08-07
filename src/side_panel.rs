@@ -1,3 +1,4 @@
+//! Side panel
 use std::fmt::Display;
 
 use egui::ImageSource;
@@ -5,11 +6,15 @@ use image::{ColorType, DynamicImage, GenericImage, GenericImageView, Pixel};
 
 use crate::TarsierApp;
 
+/// Crop icon
 const CROP_ICON: ImageSource<'_> = egui::include_image!("../assets/crop.png");
 
+/// Mode
 #[derive(serde::Deserialize, serde::Serialize, PartialEq, Debug, Clone, Copy)]
 pub enum EditMode {
+    /// Selection mode
     Selection,
+    /// Drawing mode
     Drawing,
 }
 
@@ -22,7 +27,9 @@ impl Display for EditMode {
     }
 }
 
+/// Image settings
 pub struct Others {
+    /// Convert to color
     pub convert_to: ColorType,
 }
 
@@ -34,16 +41,26 @@ impl Default for Others {
     }
 }
 
+/// Image opterations settings
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct ImageOperations {
+    /// Blur value
     pub blur: f32,
+    /// Hue rotation value
     pub hue_rotation: i32,
+    /// Brighten value
     pub brighten: i32,
+    /// Contrast value
     pub contrast: f32,
+    /// Pen radius
     pub pen_radius: u32,
+    /// Pen color
     pub pen_color: [u8; 4],
+    /// Editor mode
     pub mode: EditMode,
-    pub drawing_mode: bool,
+    /// Drawing mode
+    pub drawing_blend: bool,
+    /// Others settings
     #[serde(skip)]
     pub other: Others,
 }
@@ -58,7 +75,7 @@ impl Default for ImageOperations {
             pen_radius: 1,
             pen_color: [0, 0, 0, 255],
             mode: EditMode::Selection,
-            drawing_mode: false,
+            drawing_blend: false,
             other: Others {
                 convert_to: ColorType::Rgba8,
             },
@@ -67,6 +84,7 @@ impl Default for ImageOperations {
 }
 
 impl TarsierApp {
+    /// Show the side panel
     pub fn side_panel(&mut self, ctx: &egui::Context) {
         egui::SidePanel::right("my_panel").show(ctx, |ui| {
             ui.heading("Image Info");
@@ -248,6 +266,7 @@ impl TarsierApp {
         });
     }
 
+    /// Button to draw settings
     pub fn button_drawing(&mut self, ui: &mut egui::Ui) {
         ui.add(egui::Slider::new(
             &mut self.image_operations.pen_radius,
@@ -261,9 +280,10 @@ impl TarsierApp {
             egui::color_picker::Alpha::OnlyBlend,
         );
         self.image_operations.pen_color = [color.r(), color.g(), color.b(), color.a()];
-        ui.checkbox(&mut self.image_operations.drawing_mode, "Blend");
+        ui.checkbox(&mut self.image_operations.drawing_blend, "Blend");
     }
 
+    /// Button to show the outline
     pub fn button_outline(&mut self, ui: &mut egui::Ui) {
         if ui.button("sobel outline").clicked() {
             let sobel_x = self.img.filter3x3(&[
@@ -301,6 +321,7 @@ impl TarsierApp {
         }
     }
 
+    /// Button to do an edge detection
     pub fn button_detection(&mut self, ui: &mut egui::Ui) {
         if ui.button("edge detection").clicked() {
             let m = self.img.filter3x3(&[
@@ -312,6 +333,7 @@ impl TarsierApp {
         }
     }
 
+    /// Button to grayscale the image
     pub fn button_grayscale(
         &mut self,
         ui: &mut egui::Ui,
@@ -359,6 +381,7 @@ impl TarsierApp {
         }
     }
 
+    /// Button to invert the image
     pub fn button_invert(
         &mut self,
         ui: &mut egui::Ui,
@@ -384,6 +407,7 @@ impl TarsierApp {
         }
     }
 
+    /// Button to blur the image
     pub fn button_blur(
         &mut self,
         ui: &mut egui::Ui,
@@ -413,6 +437,7 @@ impl TarsierApp {
         }
     }
 
+    /// Crop the image
     pub fn button_crop(&mut self, ui: &mut egui::Ui) {
         if let Some(selection) = self.selection {
             if ui
@@ -435,6 +460,7 @@ impl TarsierApp {
         }
     }
 
+    /// Draw a point
     pub fn draw_point(&mut self, x_center: i32, y_center: i32) {
         let radius = self.image_operations.pen_radius as i32;
         let color = image::Rgba(self.image_operations.pen_color);
@@ -447,7 +473,7 @@ impl TarsierApp {
                         && x < self.img.width() as i32
                         && y < self.img.height() as i32
                     {
-                        if self.image_operations.drawing_mode {
+                        if self.image_operations.drawing_blend {
                             let mut current_pixel = self.img.get_pixel(x as u32, y as u32);
                             current_pixel.blend(&color);
                             self.img.put_pixel(x as u32, y as u32, current_pixel);

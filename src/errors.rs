@@ -1,15 +1,23 @@
+//! Error handling
 use std::{io, sync::Arc};
 
+/// Type for error
 #[derive(Debug, Clone)]
 enum ErrorType {
+    /// Normal error
     Normal,
+    /// Fake error
     Fake,
 }
 
+/// TarsierError object
 #[derive(Debug)]
 pub struct TarsierError {
+    /// Error message
     pub message: String,
+    /// Error source
     pub source: Option<Arc<dyn std::error::Error + Send + Sync>>,
+    /// Error type
     error_type: ErrorType,
 }
 
@@ -24,6 +32,7 @@ impl Clone for TarsierError {
 }
 
 impl TarsierError {
+    /// Create new TarsierError
     pub fn new(message: String) -> Self {
         Self {
             message,
@@ -32,6 +41,7 @@ impl TarsierError {
         }
     }
 
+    /// Create fake error
     pub fn new_fake(message: String) -> Self {
         Self {
             message,
@@ -40,6 +50,7 @@ impl TarsierError {
         }
     }
 
+    /// Check if error is fake
     pub fn is_fake(&self) -> bool {
         matches!(self.error_type, ErrorType::Fake)
     }
@@ -71,18 +82,22 @@ impl From<image::ImageError> for TarsierError {
     }
 }
 
+/// Error handler
 #[derive(Debug, Default)]
 pub struct ErrorManager {
+    /// List of errors
     pub errors: Vec<TarsierError>,
 }
 
 impl ErrorManager {
+    /// New Error manager
     pub fn new() -> Self {
         Self {
             ..Default::default()
         }
     }
 
+    /// Add an error
     pub fn add_error(&mut self, error: TarsierError) {
         if error.is_fake() {
             return;
@@ -90,6 +105,7 @@ impl ErrorManager {
         self.errors.push(error);
     }
 
+    /// Handle an error
     pub fn handle_error<T>(&mut self, error: Result<T, impl Into<TarsierError>>) -> Option<T> {
         match error {
             Ok(value) => Some(value),

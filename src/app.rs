@@ -1,3 +1,4 @@
+//! Tarsier App
 use std::{io::Cursor, path::PathBuf};
 
 use crate::{
@@ -12,35 +13,46 @@ use poll_promise::Promise;
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
-#[serde(default)] // if we add new fields, give them default values when deserializing old state
+#[serde(default)]
 pub struct TarsierApp {
+    /// Current image
     #[serde(skip)]
     pub img: image::DynamicImage,
 
+    /// Save of the image
     #[serde(skip)]
     pub base_img: image::DynamicImage,
 
+    /// Selection rectangle
     #[serde(skip)]
     pub selection: Option<egui::Rect>,
 
+    /// Start selection position
     #[serde(skip)]
     pub start_selection: Pos2,
 
+    /// Dropped_files handler
     #[serde(skip)]
     pub dropped_files: Vec<egui::DroppedFile>,
 
+    /// File upload handling
     #[serde(skip)]
     pub file_upload: Option<Promise<Result<File, TarsierError>>>,
 
+    /// Is currently selecting
     #[serde(skip)]
     pub is_selecting: bool,
 
+    /// Image operations panel
     pub image_operations: ImageOperations,
 
+    /// Path to save the image
     pub save_path: Option<PathBuf>,
 
+    /// Informations about image
     pub windows: WindowsData,
 
+    /// Error_manager
     #[serde(skip)]
     pub error_manager: ErrorManager,
 }
@@ -88,6 +100,9 @@ impl TarsierApp {
 }
 
 impl TarsierApp {
+    /// Get the save path
+    /// # Errors
+    /// Failed if the input is wrong
     #[cfg(not(target_arch = "wasm32"))]
     pub fn get_save_path(&mut self) -> Result<std::path::PathBuf, String> {
         use rfd::FileDialog;
