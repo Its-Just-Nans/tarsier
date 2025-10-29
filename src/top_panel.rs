@@ -2,6 +2,7 @@
 use std::{io::Cursor, path::PathBuf};
 
 use egui::{text::LayoutJob, Color32, ImageSource, TextFormat, ThemePreference};
+use image::ImageFormat;
 
 use crate::{side_panel::EditMode, TarsierApp};
 
@@ -36,33 +37,33 @@ impl TarsierApp {
             ui.menu_button("Save", |ui| {
                 if ui.button("PNG").clicked() {
                     ui.close();
-                    let save_path = self.get_save_path();
+                    let save_path = self.get_save_path(ImageFormat::Png);
                     if let Some(save_path) = self.error_manager.handle_error(save_path) {
-                        let res = self.save_image(image::ImageFormat::Png, &save_path);
+                        let res = self.save_image(ImageFormat::Png, &save_path);
                         self.error_manager.handle_error(res);
                     }
                 }
                 if ui.button("JPEG").clicked() {
                     ui.close();
-                    let save_path = self.get_save_path();
+                    let save_path = self.get_save_path(ImageFormat::Jpeg);
                     if let Some(save_path) = self.error_manager.handle_error(save_path) {
-                        let res = self.save_image(image::ImageFormat::Jpeg, &save_path);
+                        let res = self.save_image(ImageFormat::Jpeg, &save_path);
                         self.error_manager.handle_error(res);
                     }
                 }
                 if ui.button("BMP").clicked() {
                     ui.close();
-                    let save_path = self.get_save_path();
+                    let save_path = self.get_save_path(ImageFormat::Bmp);
                     if let Some(save_path) = self.error_manager.handle_error(save_path) {
-                        let res = self.save_image(image::ImageFormat::Bmp, &save_path);
+                        let res = self.save_image(ImageFormat::Bmp, &save_path);
                         self.error_manager.handle_error(res);
                     }
                 }
                 if ui.button("GIF").clicked() {
                     ui.close();
-                    let save_path = self.get_save_path();
+                    let save_path = self.get_save_path(ImageFormat::Gif);
                     if let Some(save_path) = self.error_manager.handle_error(save_path) {
-                        let res = self.save_image(image::ImageFormat::Gif, &save_path);
+                        let res = self.save_image(ImageFormat::Gif, &save_path);
                         self.error_manager.handle_error(res);
                     }
                 }
@@ -194,11 +195,7 @@ impl TarsierApp {
 
 impl TarsierApp {
     /// Save the current image
-    fn save_image(
-        &mut self,
-        format: image::ImageFormat,
-        path_file: &PathBuf,
-    ) -> Result<(), String> {
+    fn save_image(&mut self, format: ImageFormat, path_file: &PathBuf) -> Result<(), String> {
         let mut bytes: Vec<u8> = Vec::new();
         self.img
             .write_to(&mut Cursor::new(&mut bytes), format)

@@ -8,6 +8,8 @@ pub struct WindowsManager {
     pub right_panel: bool,
     /// Selection windows toggle
     pub selection_window: bool,
+    /// Debug and inspection toggle
+    pub show_inspection: bool,
 }
 
 impl Default for WindowsManager {
@@ -16,6 +18,7 @@ impl Default for WindowsManager {
         Self {
             right_panel: true,
             selection_window: true,
+            show_inspection: true,
         }
     }
 }
@@ -42,6 +45,12 @@ impl TarsierApp {
                 None => {
                     ui.label("No selection");
                 }
+            });
+        egui::Window::new("Inspection")
+            .open(&mut self.windows.show_inspection)
+            .vscroll(true)
+            .show(ctx, |ui| {
+                ctx.inspection_ui(ui);
             });
     }
 }

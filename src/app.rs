@@ -88,6 +88,14 @@ impl TarsierApp {
         Default::default()
     }
 
+    /// Create a new Tarsier App with an image
+    pub fn new_with_image(cc: &eframe::CreationContext<'_>, img: DynamicImage) -> Self {
+        let mut app = Self::new(cc);
+        app.base_img = img.clone();
+        app.img = img;
+        app
+    }
+
     /// Load the default image
     fn load_default_image() -> DynamicImage {
         ImageReader::new(Cursor::new(ASSET))
@@ -101,8 +109,9 @@ impl TarsierApp {
     /// # Errors
     /// Failed if the input is wrong
     #[cfg(not(target_arch = "wasm32"))]
-    pub fn get_save_path(&mut self) -> Result<std::path::PathBuf, String> {
+    pub fn get_save_path(&mut self, _img_fmt: image::ImageFormat) -> Result<PathBuf, String> {
         use rfd::FileDialog;
+        use std::path::Path;
         let path = FileDialog::new()
             .set_directory(match &self.save_path {
                 Some(path) => path.parent().ok_or("Cannot get parent in the path")?,
@@ -120,7 +129,7 @@ impl TarsierApp {
             self.save_path = Some(path.clone());
             path
         } else {
-            std::path::Path::new(".").to_path_buf()
+            Path::new(".").to_path_buf()
         };
         Ok(res)
     }
@@ -128,8 +137,10 @@ impl TarsierApp {
     /// # Errors
     /// No error in wasm
     #[cfg(target_arch = "wasm32")]
-    pub fn get_save_path(&mut self) -> Result<std::path::PathBuf, String> {
-        Ok(std::path::PathBuf::new())
+    pub fn get_save_path(&mut self, img_fmt: image::ImageFormat) -> Result<PathBuf, String> {
+        let ext = img_fmt.extensions_str()[0];
+        let filename = format!("image.{ext}");
+        Ok(PathBuf::from(filename))
     }
 }
 
@@ -163,11 +174,11 @@ impl eframe::App for TarsierApp {
         self.windows(ctx);
         self.error_manager.show(ctx);
         self.settings.show(ctx, |ui| {
-            ui.separator();
             ui.horizontal(|ui| {
                 ui.label(format!("{} settings", "Windows"));
             });
             ui.checkbox(&mut self.windows.selection_window, "Selection");
+            ui.checkbox(&mut self.windows.show_inspection, "Debug panel");
             ui.checkbox(&mut self.windows.right_panel, "Right Panel");
 
             ui.separator();
@@ -183,6 +194,7 @@ impl eframe::App for TarsierApp {
             if ui.button("Default image").clicked() {
                 self.base_img = Self::load_default_image();
                 self.img = Self::load_default_image();
+                self.selection = None;
             }
         });
     }

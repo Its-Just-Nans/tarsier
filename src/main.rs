@@ -4,6 +4,9 @@
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> eframe::Result {
+    use std::env;
+    use std::process::exit;
+
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
 
     let native_options = eframe::NativeOptions {
@@ -18,10 +21,36 @@ fn main() -> eframe::Result {
             ),
         ..Default::default()
     };
+    let args: Vec<String> = env::args().collect();
+    let base_image = if args.len() > 1 {
+        use image::ImageReader;
+        let path = &args[1];
+        match ImageReader::open(path) {
+            Ok(reader) => match reader.decode() {
+                Ok(img) => Some(img),
+                Err(e) => {
+                    eprintln!("Failed to load image '{path}': {e}");
+                    exit(1);
+                }
+            },
+            Err(e) => {
+                eprintln!("Failed to load image '{path}': {e}");
+                exit(1);
+            }
+        }
+    } else {
+        None
+    };
     eframe::run_native(
         "tarsier",
         native_options,
-        Box::new(|cc| Ok(Box::new(tarsier::TarsierApp::new(cc)))),
+        Box::new(|cc| {
+            use tarsier::TarsierApp;
+            match base_image {
+                Some(base_img) => Ok(Box::new(TarsierApp::new_with_image(cc, base_img))),
+                None => Ok(Box::new(TarsierApp::new(cc))),
+            }
+        }),
     )
 }
 
