@@ -18,7 +18,7 @@ impl Default for WindowsManager {
         Self {
             right_panel: true,
             selection_window: true,
-            show_inspection: true,
+            show_inspection: false,
         }
     }
 }
