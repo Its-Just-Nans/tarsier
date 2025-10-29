@@ -12,6 +12,11 @@ A simple image editor. Check also its cousin [galago](https://galago.n4n5.dev), 
 
 ```sh
 cargo install tarsier --locked
+
+# usage as CLI
+tarsier path/to/file.png # an image
+# or
+tarsier
 ```
 
 ## LICENSE
