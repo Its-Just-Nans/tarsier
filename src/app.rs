@@ -18,7 +18,7 @@ pub struct TarsierApp {
 
     /// Save of the image
     #[serde(skip)]
-    pub base_img: image::DynamicImage,
+    pub saved_img: image::DynamicImage,
 
     /// Selection rectangle
     #[serde(skip)]
@@ -58,7 +58,7 @@ impl Default for TarsierApp {
     fn default() -> Self {
         let img = Self::load_default_image();
         Self {
-            base_img: img.clone(),
+            saved_img: img.clone(),
             img,
             selection: None,
             start_selection: Pos2::ZERO,
@@ -91,7 +91,7 @@ impl TarsierApp {
     /// Create a new Tarsier App with an image
     pub fn new_with_image(cc: &eframe::CreationContext<'_>, img: DynamicImage) -> Self {
         let mut app = Self::new(cc);
-        app.base_img = img.clone();
+        app.saved_img = img.clone();
         app.img = img;
         app
     }
@@ -161,7 +161,7 @@ impl eframe::App for TarsierApp {
 
         match self.file_handler.handle_files(ctx) {
             Ok(Some(img)) => {
-                self.base_img = img.clone();
+                self.saved_img = img.clone();
                 self.img = img;
                 self.selection = None;
             }
@@ -192,7 +192,7 @@ impl eframe::App for TarsierApp {
 
             ui.separator();
             if ui.button("Default image").clicked() {
-                self.base_img = Self::load_default_image();
+                self.saved_img = Self::load_default_image();
                 self.img = Self::load_default_image();
                 self.selection = None;
             }

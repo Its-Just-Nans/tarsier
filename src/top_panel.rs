@@ -1,7 +1,7 @@
 //! Top panel
 use std::{io::Cursor, path::PathBuf};
 
-use egui::{text::LayoutJob, Color32, ImageSource, TextFormat, ThemePreference};
+use egui::{text::LayoutJob, Color32, ColorImage, ImageSource, TextFormat, ThemePreference};
 use image::ImageFormat;
 
 use crate::{side_panel::EditMode, TarsierApp};
@@ -99,7 +99,7 @@ impl TarsierApp {
                     .on_hover_text("Reset the image")
                     .clicked()
                 {
-                    self.img = self.base_img.clone();
+                    self.img = self.saved_img.clone();
                     self.selection = None;
                 }
                 ui.separator();
@@ -174,8 +174,8 @@ impl TarsierApp {
                         }
                     }
                 });
-                ui.separator();
                 if let Some(selection) = self.selection {
+                    ui.separator();
                     if ui
                         .label(format!(
                             "Selection: {}x{}",
@@ -187,6 +187,14 @@ impl TarsierApp {
                     {
                         self.selection = None;
                     }
+                }
+                ui.separator();
+                if ui.button("Copy").clicked() {
+                    let size = [self.img.width() as _, self.img.height() as _];
+                    let rgb_img = self.img.to_rgba8();
+                    let pixels = rgb_img.as_flat_samples();
+                    let color_image = ColorImage::from_rgba_unmultiplied(size, pixels.as_slice());
+                    ctx.copy_image(color_image);
                 }
             });
         });
