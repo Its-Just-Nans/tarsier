@@ -1,8 +1,8 @@
 //! Central panel
 use std::sync::Arc;
 
-use egui::{load::SizedTexture, ColorImage, Image, ImageData, Pos2, Sense, TextureOptions, Vec2};
 use bladvak::errors::ErrorManager;
+use egui::{load::SizedTexture, ColorImage, Image, ImageData, Pos2, Sense, TextureOptions, Vec2};
 
 use crate::{side_panel::EditMode, TarsierApp};
 

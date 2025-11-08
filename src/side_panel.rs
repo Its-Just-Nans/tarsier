@@ -1,9 +1,9 @@
 //! Side panel
 use std::{fmt::Display, sync::Arc};
 
+use bladvak::errors::{AppError, ErrorManager};
 use egui::Ui;
 use image::{ColorType, DynamicImage, GenericImage, GenericImageView, Pixel};
-use bladvak::errors::{AppError, ErrorManager};
 
 use crate::TarsierApp;
 
