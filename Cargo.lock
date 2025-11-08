@@ -598,9 +598,9 @@ checksum = "6099cdc01846bc367c4e7dd630dc5966dccf36b652fae7a74e17b640411a91b2"
 
 [[package]]
 name = "bladvak"
-version = "0.2.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "61a1dba5eb220ecfd680329c3348a968499e3a4dfa92902e7b1b88b12d77080e"
+checksum = "6de291b27caa64b295829cc5f824412541d922b868f7dd7295ceaa109fc83256"
 dependencies = [
  "eframe",
  "egui",
@@ -3574,7 +3574,7 @@ checksum = "61c41af27dd6d1e27b1b16b489db798443478cef1f06a660c96db617ba5de3b1"
 
 [[package]]
 name = "tarsier"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "bladvak",
  "eframe",
