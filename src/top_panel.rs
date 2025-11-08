@@ -24,34 +24,58 @@ impl TarsierApp {
         ui.menu_button("Save", |ui| {
             if ui.button("PNG").clicked() {
                 ui.close();
-                let save_path = self.get_save_path(ImageFormat::Png);
-                if let Some(save_path) = error_manager.handle_error(save_path) {
-                    let res = self.save_image(ImageFormat::Png, &save_path);
-                    error_manager.handle_error(res);
+                let save_path = bladvak::utils::get_save_path(Some(PathBuf::from(format!(
+                    "image.{}",
+                    ImageFormat::Png.extensions_str()[0]
+                ))));
+                if let Some(save_p) = error_manager.handle_error(save_path) {
+                    self.save_path = save_p.clone();
+                    if let Some(path_to_save) = save_p {
+                        let res = self.save_image(ImageFormat::Png, &path_to_save);
+                        error_manager.handle_error(res);
+                    }
                 }
             }
             if ui.button("JPEG").clicked() {
                 ui.close();
-                let save_path = self.get_save_path(ImageFormat::Jpeg);
-                if let Some(save_path) = error_manager.handle_error(save_path) {
-                    let res = self.save_image(ImageFormat::Jpeg, &save_path);
-                    error_manager.handle_error(res);
+                let save_path = bladvak::utils::get_save_path(Some(PathBuf::from(format!(
+                    "image.{}",
+                    ImageFormat::Jpeg.extensions_str()[0]
+                ))));
+                if let Some(save_p) = error_manager.handle_error(save_path) {
+                    self.save_path = save_p.clone();
+                    if let Some(path_to_save) = save_p {
+                        let res = self.save_image(ImageFormat::Jpeg, &path_to_save);
+                        error_manager.handle_error(res);
+                    }
                 }
             }
             if ui.button("BMP").clicked() {
                 ui.close();
-                let save_path = self.get_save_path(ImageFormat::Bmp);
-                if let Some(save_path) = error_manager.handle_error(save_path) {
-                    let res = self.save_image(ImageFormat::Bmp, &save_path);
-                    error_manager.handle_error(res);
+                let save_path = bladvak::utils::get_save_path(Some(PathBuf::from(format!(
+                    "image.{}",
+                    ImageFormat::Bmp.extensions_str()[0]
+                ))));
+                if let Some(save_p) = error_manager.handle_error(save_path) {
+                    self.save_path = save_p.clone();
+                    if let Some(path_to_save) = save_p {
+                        let res = self.save_image(ImageFormat::Bmp, &path_to_save);
+                        error_manager.handle_error(res);
+                    }
                 }
             }
             if ui.button("GIF").clicked() {
                 ui.close();
-                let save_path = self.get_save_path(ImageFormat::Gif);
-                if let Some(save_path) = error_manager.handle_error(save_path) {
-                    let res = self.save_image(ImageFormat::Gif, &save_path);
-                    error_manager.handle_error(res);
+                let save_path = bladvak::utils::get_save_path(Some(PathBuf::from(format!(
+                    "image.{}",
+                    ImageFormat::Gif.extensions_str()[0]
+                ))));
+                if let Some(save_p) = error_manager.handle_error(save_path) {
+                    self.save_path = save_p.clone();
+                    if let Some(path_to_save) = save_p {
+                        let res = self.save_image(ImageFormat::Gif, &path_to_save);
+                        error_manager.handle_error(res);
+                    }
                 }
             }
         });

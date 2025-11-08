@@ -131,44 +131,6 @@ impl TarsierApp {
             .unwrap()
     }
 
-    /// Get the save path
-    /// # Errors
-    /// Failed if the input is wrong
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn get_save_path(&mut self, _img_fmt: image::ImageFormat) -> Result<PathBuf, String> {
-        use rfd::FileDialog;
-        use std::path::Path;
-        let path = FileDialog::new()
-            .set_directory(match &self.save_path {
-                Some(path) => path.parent().ok_or("Cannot get parent in the path")?,
-                None => std::path::Path::new("."),
-            })
-            .set_file_name(match &self.save_path {
-                Some(path) => path
-                    .file_name()
-                    .ok_or("Cannot get file name")?
-                    .to_string_lossy(),
-                None => std::path::Path::new("image").to_string_lossy(),
-            })
-            .save_file();
-        let res = if let Some(path) = path {
-            self.save_path = Some(path.clone());
-            path
-        } else {
-            Path::new(".").to_path_buf()
-        };
-        Ok(res)
-    }
-    /// Get a new path
-    /// # Errors
-    /// No error in wasm
-    #[cfg(target_arch = "wasm32")]
-    pub fn get_save_path(&mut self, img_fmt: image::ImageFormat) -> Result<PathBuf, String> {
-        let ext = img_fmt.extensions_str()[0];
-        let filename = format!("image.{ext}");
-        Ok(PathBuf::from(filename))
-    }
-
     /// Crop icon
     const CROP_ICON: ImageSource<'_> = egui::include_image!("../assets/icon_crop.png");
 
@@ -270,7 +232,9 @@ impl BladvakApp for TarsierApp {
     }
 
     fn side_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
-        self.app_side_panel(ui, error_manager)
+        egui::Frame::central_panel(&ui.ctx().style()).show(ui, |parent_ui| {
+            self.app_side_panel(parent_ui, error_manager)
+        });
     }
 
     fn new(cc: &eframe::CreationContext<'_>) -> Result<Self, AppError> {
