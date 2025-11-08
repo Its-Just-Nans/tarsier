@@ -34,7 +34,7 @@ log = "0.4"
 serde = { version = "1", features = ["derive"] }
 image = "0.25.8"
 egui_extras = { version = "0.33", features = ["all_loaders"] }
-bladvak = "0.2.2"
+bladvak = "0.2.3"
 rfd = "0.15.4"
 
 [profile.release]
