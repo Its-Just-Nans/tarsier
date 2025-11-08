@@ -598,9 +598,9 @@ checksum = "6099cdc01846bc367c4e7dd630dc5966dccf36b652fae7a74e17b640411a91b2"
 
 [[package]]
 name = "bladvak"
-version = "0.2.2"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6de291b27caa64b295829cc5f824412541d922b868f7dd7295ceaa109fc83256"
+checksum = "bf7bd605e03c57376ce5c4d2ac227ce1db784d81bcc3129a813f6f7a5fe8e067"
 dependencies = [
  "eframe",
  "egui",
