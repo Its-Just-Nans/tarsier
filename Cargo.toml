@@ -35,7 +35,6 @@ serde = { version = "1", features = ["derive"] }
 image = "0.25.8"
 egui_extras = { version = "0.33", features = ["all_loaders"] }
 bladvak = "1.0.2"
-rfd = "0.15.4"
 
 [profile.release]
 opt-level = 2 # fast and small wasm
