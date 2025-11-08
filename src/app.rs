@@ -1,11 +1,13 @@
 //! Tarsier App
-use std::{io::Cursor, path::PathBuf};
+use std::{fmt::Debug, io::Cursor, path::PathBuf, sync::Arc};
 
-use crate::{
-    errors::ErrorManager, file_handler::FileHandler, settings::Settings,
-    side_panel::ImageOperations, windows::WindowsManager,
+use crate::side_panel::{EditMode, ImageOperations};
+use bladvak::{
+    app::BladvakApp,
+    errors::{AppError, ErrorManager},
 };
-use egui::Pos2;
+use eframe::CreationContext;
+use egui::{Color32, Image, ImageSource, Pos2};
 use image::{DynamicImage, ImageReader};
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
@@ -32,26 +34,30 @@ pub struct TarsierApp {
     #[serde(skip)]
     pub is_selecting: bool,
 
+    /// Selection as windows
+    pub cursor_op_as_window: bool,
+
+    /// Operations as windows
+    pub operations_as_window: bool,
+
+    /// Image infos as windows
+    pub image_info_as_window: bool,
+
     /// Image operations panel
     pub image_operations: ImageOperations,
 
     /// Path to save the image
     pub save_path: Option<PathBuf>,
-
-    /// Windows manager
-    pub windows: WindowsManager,
-
-    /// Error_manager
-    #[serde(skip)]
-    pub error_manager: ErrorManager,
-
-    /// Settings Ui
-    pub settings: Settings,
-
-    /// File Handler
-    pub file_handler: FileHandler,
 }
 
+impl Debug for TarsierApp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut debug_fmt = f.debug_struct("TarsierApp");
+        debug_fmt.finish()
+    }
+}
+
+/// default image
 const ASSET: &[u8] = include_bytes!("../assets/icon-1024.png");
 
 impl Default for TarsierApp {
@@ -61,21 +67,20 @@ impl Default for TarsierApp {
             saved_img: img.clone(),
             img,
             selection: None,
+            cursor_op_as_window: false,
             start_selection: Pos2::ZERO,
             is_selecting: false,
+            operations_as_window: false,
+            image_info_as_window: false,
             image_operations: Default::default(),
             save_path: None,
-            error_manager: Default::default(),
-            windows: Default::default(),
-            settings: Default::default(),
-            file_handler: Default::default(),
         }
     }
 }
 
 impl TarsierApp {
     /// Called once before the first frame.
-    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+    fn new_app(cc: &eframe::CreationContext<'_>) -> Self {
         // This is also where you can customize the look and feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
         egui_extras::install_image_loaders(&cc.egui_ctx);
@@ -87,13 +92,34 @@ impl TarsierApp {
 
         Default::default()
     }
-
     /// Create a new Tarsier App with an image
-    pub fn new_with_image(cc: &eframe::CreationContext<'_>, img: DynamicImage) -> Self {
-        let mut app = Self::new(cc);
-        app.saved_img = img.clone();
-        app.img = img;
-        app
+    /// # Errors
+    /// Return error if fail to load image
+    pub fn new_app_with_args(cc: &CreationContext<'_>, args: &[String]) -> Result<Self, AppError> {
+        if args.len() > 1 {
+            use image::ImageReader;
+            let path = &args[1];
+            match ImageReader::open(path) {
+                Ok(reader) => match reader.decode() {
+                    Ok(img) => {
+                        let mut app = Self::new_app(cc);
+                        app.saved_img = img.clone();
+                        app.img = img;
+                        Ok(app)
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to load image '{path}': {e}");
+                        Err(AppError::new(format!("Failed to load image '{path}': {e}")))
+                    }
+                },
+                Err(e) => {
+                    eprintln!("Failed to load image '{path}': {e}");
+                    Err(AppError::new(format!("Failed to load image '{path}': {e}")))
+                }
+            }
+        } else {
+            Ok(TarsierApp::new_app(cc))
+        }
     }
 
     /// Load the default image
@@ -142,60 +168,117 @@ impl TarsierApp {
         let filename = format!("image.{ext}");
         Ok(PathBuf::from(filename))
     }
+
+    /// Crop icon
+    const CROP_ICON: ImageSource<'_> = egui::include_image!("../assets/icon_crop.png");
+
+    /// Cursor ui
+    pub(crate) fn cursor_ui(&mut self, ui: &mut egui::Ui) {
+        if self.image_operations.mode == EditMode::Drawing {
+            self.button_drawing(ui);
+        } else {
+            match self.selection {
+                Some(rect) => {
+                    let width = rect.width().abs() as u32;
+                    let height = rect.height().abs() as u32;
+                    ui.label(format!("Width: {width}"));
+                    ui.label(format!("Height: {height}"));
+                    ui.label(format!("Min: {:?}", rect.left_top()));
+                    ui.label(format!("Max: {:?}", rect.right_bottom()));
+                }
+                None => {
+                    ui.label("No selection");
+                }
+            }
+            if let Some(selection) = self.selection {
+                let icon_image = Image::new(Self::CROP_ICON);
+                let icon = if ui.ctx().style().visuals.dark_mode {
+                    icon_image
+                } else {
+                    icon_image.tint(Color32::BLACK)
+                };
+                if ui
+                    .add(egui::Button::image_and_text(icon, "Crop"))
+                    .on_hover_text("Crop the image")
+                    .clicked()
+                {
+                    let min_pos = selection.min;
+                    let max_pos = selection.max;
+                    let min_x = min_pos.x as u32;
+                    let min_y = min_pos.y as u32;
+                    let max_x = max_pos.x as u32;
+                    let max_y = max_pos.y as u32;
+                    let cropped_img = self
+                        .img
+                        .crop_imm(min_x, min_y, max_x - min_x, max_y - min_y);
+                    self.img = cropped_img;
+                    self.selection = None;
+                }
+            }
+        }
+    }
 }
 
-impl eframe::App for TarsierApp {
-    /// Called by the frame work to save state before shutdown.
-    fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        eframe::set_value(storage, eframe::APP_KEY, self);
+impl BladvakApp for TarsierApp {
+    fn settings(&mut self, ui: &mut egui::Ui, _error_manager: &mut ErrorManager) {
+        ui.separator();
+        ui.checkbox(&mut self.cursor_op_as_window, "Cursor windows");
+        ui.checkbox(&mut self.image_info_as_window, "Image info windows");
+        ui.checkbox(&mut self.operations_as_window, "Operations windows");
+        ui.separator();
+        if ui.button("Default image").clicked() {
+            self.saved_img = Self::load_default_image();
+            self.img = Self::load_default_image();
+            self.selection = None;
+        }
     }
 
-    /// Called each time the UI needs repainting, which may be many times per second.
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        self.top_panel(ctx);
+    fn is_side_panel(&self) -> bool {
+        !self.cursor_op_as_window || !self.image_info_as_window || !self.operations_as_window
+    }
 
-        if self.windows.right_panel {
-            self.side_panel(ctx);
-        }
-        self.central_panel(ctx);
+    fn is_open_button(&self) -> bool {
+        true
+    }
 
-        match self.file_handler.handle_files(ctx) {
-            Ok(Some(img)) => {
-                self.saved_img = img.clone();
-                self.img = img;
-                self.selection = None;
-            }
-            Ok(None) => {}
-            Err(err) => {
-                self.error_manager.add_error(err);
-            }
-        }
+    fn handle_file(&mut self, bytes: &[u8]) -> Result<(), AppError> {
+        let img_reader = ImageReader::new(Cursor::new(bytes)).with_guessed_format()?;
+        let img = match img_reader.decode() {
+            Ok(img) => img,
+            Err(e) => return Err(AppError::new_with_source(Arc::new(e))),
+        };
+        self.saved_img = img.clone();
+        self.img = img;
+        self.selection = None;
+        Ok(())
+    }
 
-        self.windows(ctx);
-        self.error_manager.show(ctx);
-        self.settings.show(ctx, |ui| {
-            ui.horizontal(|ui| {
-                ui.label(format!("{} settings", "Windows"));
-            });
-            ui.checkbox(&mut self.windows.selection_window, "Selection");
-            ui.checkbox(&mut self.windows.show_inspection, "Debug panel");
-            ui.checkbox(&mut self.windows.right_panel, "Right Panel");
+    fn top_panel(&mut self, ui: &mut egui::Ui, _error_manager: &mut ErrorManager) {
+        self.app_top_panel(ui)
+    }
 
-            ui.separator();
-            ui.horizontal(|ui| {
-                ui.label(format!("{} settings", self.error_manager.title()));
-                ui.button("⟳").clicked().then(|| {
-                    self.error_manager = Default::default();
-                });
-            });
-            self.error_manager.show_settings(ui);
+    fn menu_file(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
+        self.app_menu_file(ui, error_manager)
+    }
 
-            ui.separator();
-            if ui.button("Default image").clicked() {
-                self.saved_img = Self::load_default_image();
-                self.img = Self::load_default_image();
-                self.selection = None;
-            }
-        });
+    fn central_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
+        self.app_central_panel(ui, error_manager)
+    }
+
+    fn name(&self) -> String {
+        env!("CARGO_PKG_NAME").to_string()
+    }
+
+    fn side_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
+        self.app_side_panel(ui, error_manager)
+    }
+
+    fn new(cc: &eframe::CreationContext<'_>) -> Result<Self, AppError> {
+        Ok(TarsierApp::new_app(cc))
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    fn new_with_args(cc: &CreationContext<'_>, args: &[String]) -> Result<Self, AppError> {
+        TarsierApp::new_app_with_args(cc, args)
     }
 }

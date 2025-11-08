@@ -1,13 +1,11 @@
 //! Side panel
-use std::fmt::Display;
+use std::{fmt::Display, sync::Arc};
 
-use egui::{ImageSource, Ui};
+use egui::Ui;
 use image::{ColorType, DynamicImage, GenericImage, GenericImageView, Pixel};
+use bladvak::errors::{AppError, ErrorManager};
 
 use crate::TarsierApp;
-
-/// Crop icon
-const CROP_ICON: ImageSource<'_> = egui::include_image!("../assets/crop.png");
 
 /// Mode
 #[derive(serde::Deserialize, serde::Serialize, PartialEq, Debug, Clone, Copy)]
@@ -84,13 +82,30 @@ impl Default for ImageOperations {
 }
 
 impl TarsierApp {
-    /// Side panel content
-    fn side_panel_content(&mut self, ui: &mut Ui) {
+    /// Side panel
+    pub(crate) fn app_side_panel(&mut self, ui: &mut Ui, error_manager: &mut ErrorManager) {
+        if !self.image_info_as_window {
+            self.image_info(ui);
+            ui.separator();
+        }
+        if !self.operations_as_window {
+            self.image_operations(ui, error_manager);
+            ui.separator();
+        }
+        if !self.cursor_op_as_window {
+            self.cursor_ui(ui);
+        }
+    }
+
+    /// Image info
+    pub(crate) fn image_info(&mut self, ui: &mut Ui) {
         ui.heading("Image Info");
         ui.label(format!("Size: {}x{}", self.img.width(), self.img.height()));
         ui.label(format!("Format: {:?}", self.img.color()));
+    }
 
-        ui.separator();
+    /// Side panel content
+    pub(crate) fn image_operations(&mut self, ui: &mut Ui, error_manager: &mut ErrorManager) {
         ui.label("Convert");
         egui::ComboBox::from_id_salt("convert_box")
             .selected_text(format!("{:?}", self.image_operations.other.convert_to))
@@ -176,11 +191,17 @@ impl TarsierApp {
         ui.separator();
         self.button_detection(ui);
         ui.separator();
-        self.button_grayscale(ui, &current_selection);
+        if let Err(e) = self.button_grayscale(ui, &current_selection) {
+            error_manager.add_error(AppError::new_with_source(Arc::new(e)));
+        }
         ui.separator();
-        self.button_invert(ui, &current_selection);
+        if let Err(e) = self.button_invert(ui, &current_selection) {
+            error_manager.add_error(AppError::new_with_source(Arc::new(e)));
+        }
         ui.separator();
-        self.button_blur(ui, &current_selection);
+        if let Err(e) = self.button_blur(ui, &current_selection) {
+            error_manager.add_error(AppError::new_with_source(Arc::new(e)));
+        }
         ui.separator();
         ui.add(egui::Slider::new(
             &mut self.image_operations.hue_rotation,
@@ -197,8 +218,9 @@ impl TarsierApp {
                         selection.3 - selection.1,
                     );
                     let inner = cropped_img.huerotate(self.image_operations.hue_rotation);
-                    let res = self.img.copy_from(&inner, selection.0, selection.1);
-                    self.error_manager.handle_error(res);
+                    if let Err(e) = self.img.copy_from(&inner, selection.0, selection.1) {
+                        error_manager.add_error(AppError::new_with_source(Arc::new(e)));
+                    }
                 }
                 None => {
                     self.img = self.img.huerotate(self.image_operations.hue_rotation);
@@ -220,8 +242,9 @@ impl TarsierApp {
                         selection.3 - selection.1,
                     );
                     let inner = cropped_img.brighten(self.image_operations.brighten);
-                    let res = self.img.copy_from(&inner, selection.0, selection.1);
-                    self.error_manager.handle_error(res);
+                    if let Err(e) = self.img.copy_from(&inner, selection.0, selection.1) {
+                        error_manager.add_error(AppError::new_with_source(Arc::new(e)));
+                    }
                 }
                 None => {
                     self.img = self.img.brighten(self.image_operations.brighten);
@@ -243,32 +266,15 @@ impl TarsierApp {
                         selection.3 - selection.1,
                     );
                     let inner = cropped_img.adjust_contrast(self.image_operations.contrast);
-                    let res = self.img.copy_from(&inner, selection.0, selection.1);
-                    self.error_manager.handle_error(res);
+                    if let Err(e) = self.img.copy_from(&inner, selection.0, selection.1) {
+                        error_manager.add_error(AppError::new_with_source(Arc::new(e)));
+                    }
                 }
                 None => {
                     self.img = self.img.adjust_contrast(self.image_operations.contrast);
                 }
             }
         }
-        ui.separator();
-        if self.image_operations.mode == EditMode::Drawing {
-            self.button_drawing(ui);
-            ui.separator();
-        } else {
-            self.button_crop(ui);
-        }
-
-        ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
-            egui::warn_if_debug_build(ui);
-        });
-    }
-
-    /// Show the side panel
-    pub fn side_panel(&mut self, ctx: &egui::Context) {
-        egui::SidePanel::right("my_panel")
-            .min_width(self.settings.min_width_sidebar)
-            .show(ctx, |side_panel_ui| self.side_panel_content(side_panel_ui));
     }
 
     /// Button to draw settings
@@ -339,11 +345,13 @@ impl TarsierApp {
     }
 
     /// Button to grayscale the image
+    /// # Errors
+    /// Error if fail to copy
     pub fn button_grayscale(
         &mut self,
         ui: &mut egui::Ui,
         current_selection: &Option<(u32, u32, u32, u32)>,
-    ) {
+    ) -> Result<(), AppError> {
         if ui.button("Grayscale").clicked() {
             match current_selection {
                 Some(selection) => {
@@ -365,8 +373,9 @@ impl TarsierApp {
                         ColorType::Rgba16 => inner_mut.to_rgba16().into(),
                         _ => inner_mut.to_rgba8().into(),
                     };
-                    let res = self.img.copy_from(&inner_mut, selection.0, selection.1);
-                    self.error_manager.handle_error(res);
+                    if let Err(e) = self.img.copy_from(&inner_mut, selection.0, selection.1) {
+                        return Err(AppError::new_with_source(Arc::new(e)));
+                    }
                 }
                 None => {
                     let full_img = self.img.grayscale();
@@ -384,14 +393,17 @@ impl TarsierApp {
                 }
             }
         }
+        Ok(())
     }
 
     /// Button to invert the image
+    /// # Errors
+    /// Error if fail to copy
     pub fn button_invert(
         &mut self,
         ui: &mut egui::Ui,
         current_selection: &Option<(u32, u32, u32, u32)>,
-    ) {
+    ) -> Result<(), AppError> {
         if ui.button("invert").clicked() {
             match current_selection {
                 Some(selection) => {
@@ -402,22 +414,26 @@ impl TarsierApp {
                         selection.3 - selection.1,
                     );
                     cropped_img.invert();
-                    let res = self.img.copy_from(&cropped_img, selection.0, selection.1);
-                    self.error_manager.handle_error(res);
+                    if let Err(e) = self.img.copy_from(&cropped_img, selection.0, selection.1) {
+                        return Err(AppError::new_with_source(Arc::new(e)));
+                    }
                 }
                 None => {
                     self.img.invert();
                 }
             }
         }
+        Ok(())
     }
 
     /// Button to blur the image
+    /// # Errors
+    /// Error if fail to copy
     pub fn button_blur(
         &mut self,
         ui: &mut egui::Ui,
         current_selection: &Option<(u32, u32, u32, u32)>,
-    ) {
+    ) -> Result<(), AppError> {
         ui.add(egui::Slider::new(
             &mut self.image_operations.blur,
             0.0..=100.0,
@@ -432,37 +448,16 @@ impl TarsierApp {
                         selection.3 - selection.1,
                     );
                     let inner_mut = cropped_img.blur(self.image_operations.blur);
-                    let res = self.img.copy_from(&inner_mut, selection.0, selection.1);
-                    self.error_manager.handle_error(res);
+                    if let Err(e) = self.img.copy_from(&inner_mut, selection.0, selection.1) {
+                        return Err(AppError::new_with_source(Arc::new(e)));
+                    }
                 }
                 None => {
                     self.img = self.img.blur(self.image_operations.blur);
                 }
             }
         }
-    }
-
-    /// Crop the image
-    pub fn button_crop(&mut self, ui: &mut egui::Ui) {
-        if let Some(selection) = self.selection {
-            if ui
-                .add(egui::Button::image_and_text(CROP_ICON, "Crop"))
-                .on_hover_text("Crop the image")
-                .clicked()
-            {
-                let min_pos = selection.min;
-                let max_pos = selection.max;
-                let min_x = min_pos.x as u32;
-                let min_y = min_pos.y as u32;
-                let max_x = max_pos.x as u32;
-                let max_y = max_pos.y as u32;
-                let cropped_img = self
-                    .img
-                    .crop_imm(min_x, min_y, max_x - min_x, max_y - min_y);
-                self.img = cropped_img;
-                self.selection = None;
-            }
-        }
+        Ok(())
     }
 
     /// Draw a point

@@ -1,9 +1,8 @@
 [package]
 name = "tarsier"
-version = "1.0.2"
+version = "1.1.0"
 authors = ["n4n5 <its.just.n4n5@gmail.com>"]
 edition = "2021"
-include = ["LICENSE", "**/*.rs", "Cargo.toml", "assets/*"]
 description = "A simple image editor"
 license = "MIT"
 rust-version = "1.88"
@@ -12,6 +11,8 @@ repository = "https://github.com/Its-Just-Nans/tarsier"
 documentation = "https://docs.rs/tarsier"
 keywords = ["image", "edition", "editor"]
 categories = ["graphics", "multimedia"]
+include = ["LICENSE", "**/*.rs", "Cargo.toml", "assets/*", "index.html"]
+
 
 [package.metadata.docs.rs]
 all-features = true
@@ -33,20 +34,8 @@ log = "0.4"
 serde = { version = "1", features = ["derive"] }
 image = "0.25.8"
 egui_extras = { version = "0.33", features = ["all_loaders"] }
+bladvak = "0.2.1"
 rfd = "0.15.4"
-poll-promise = { version = "0.3", features = ["web"] }
-
-# native:
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-env_logger = "0.11"
-
-# web:
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-wasm-bindgen-futures = "0.4"
-web-sys = { version = "0.3.82", features = [
-    "Url",
-] } # to access the DOM (to hide the loading text)
-js-sys = "0.3"
 
 [profile.release]
 opt-level = 2 # fast and small wasm
