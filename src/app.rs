@@ -22,6 +22,10 @@ pub struct TarsierApp {
     #[serde(skip)]
     pub saved_img: image::DynamicImage,
 
+    /// Exif of the image
+    #[serde(skip)]
+    pub exif: Option<exif::Exif>,
+
     /// Selection rectangle
     #[serde(skip)]
     pub selection: Option<egui::Rect>,
@@ -66,6 +70,7 @@ impl Default for TarsierApp {
         Self {
             saved_img: img.clone(),
             img,
+            exif: None,
             selection: None,
             cursor_op_as_window: false,
             start_selection: Pos2::ZERO,
@@ -103,8 +108,7 @@ impl TarsierApp {
                 Ok(reader) => match reader.decode() {
                     Ok(img) => {
                         let mut app = Self::new_app(cc);
-                        app.saved_img = img.clone();
-                        app.img = img;
+                        app.update_file(img, None);
                         Ok(app)
                     }
                     Err(e) => {
@@ -179,6 +183,27 @@ impl TarsierApp {
             }
         }
     }
+
+    /// Update the image file
+    fn update_file(&mut self, new_img: DynamicImage, new_img_bytes: Option<&[u8]>) {
+        self.saved_img = new_img.clone();
+        self.img = new_img.clone();
+        let exifreader = exif::Reader::new();
+        if let Some(bytes) = new_img_bytes {
+            let cursor = Cursor::new(bytes);
+            let mut bufreader = std::io::BufReader::new(cursor);
+            match exifreader.read_from_container(&mut bufreader) {
+                Ok(exif) => self.exif = Some(exif),
+                Err(e) => {
+                    self.exif = None;
+                    log::info!("Cannot get exif of image: {e}");
+                }
+            };
+        } else {
+            self.exif = None;
+        }
+        self.selection = None;
+    }
 }
 
 impl BladvakApp for TarsierApp {
@@ -189,9 +214,7 @@ impl BladvakApp for TarsierApp {
         ui.checkbox(&mut self.operations_as_window, "Operations windows");
         ui.separator();
         if ui.button("Default image").clicked() {
-            self.saved_img = Self::load_default_image();
-            self.img = Self::load_default_image();
-            self.selection = None;
+            self.update_file(Self::load_default_image(), None);
         }
     }
 
@@ -209,9 +232,7 @@ impl BladvakApp for TarsierApp {
             Ok(img) => img,
             Err(e) => return Err(AppError::new_with_source(Arc::new(e))),
         };
-        self.saved_img = img.clone();
-        self.img = img;
-        self.selection = None;
+        self.update_file(img, Some(bytes));
         Ok(())
     }
 

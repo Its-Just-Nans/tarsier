@@ -3,6 +3,7 @@ use std::{fmt::Display, sync::Arc};
 
 use bladvak::errors::{AppError, ErrorManager};
 use egui::Ui;
+use egui_extras::{Column, TableBuilder};
 use image::{ColorType, DynamicImage, GenericImage, GenericImageView, Pixel};
 
 use crate::TarsierApp;
@@ -102,6 +103,49 @@ impl TarsierApp {
         ui.heading("Image Info");
         ui.label(format!("Size: {}x{}", self.img.width(), self.img.height()));
         ui.label(format!("Format: {:?}", self.img.color()));
+        match &self.exif {
+            Some(exif) => {
+                // egui::ScrollArea::vertical()
+                //     .max_height(100.0)
+                //     .show(ui, |scroll_ui| {
+                TableBuilder::new(ui)
+                    .max_scroll_height(100.0)
+                    .striped(true)
+                    .column(Column::auto())
+                    .column(Column::auto())
+                    .column(Column::remainder())
+                    .header(20.0, |mut header| {
+                        header.col(|ui| {
+                            ui.label("Exif tag");
+                        });
+                        header.col(|ui| {
+                            ui.label("IFD idx");
+                        });
+                        header.col(|ui| {
+                            ui.label("exif value");
+                        });
+                    })
+                    .body(|mut body| {
+                        for field in exif.fields() {
+                            body.row(30.0, |mut row| {
+                                row.col(|ui| {
+                                    ui.label(format!("{}", field.tag));
+                                });
+                                row.col(|ui| {
+                                    ui.label(format!("{}", field.ifd_num));
+                                });
+                                row.col(|ui| {
+                                    ui.label(format!("{}", field.display_value().with_unit(exif)));
+                                });
+                            });
+                        }
+                    });
+                // });
+            }
+            None => {
+                ui.label("No exif detected");
+            }
+        };
     }
 
     /// Side panel content
