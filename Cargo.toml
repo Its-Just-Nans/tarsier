@@ -34,7 +34,7 @@ log = "0.4"
 serde = { version = "1", features = ["derive"] }
 image = "0.25.9"
 egui_extras = { version = "0.33", features = ["all_loaders"] }
-bladvak = "1.0.6"
+bladvak = "1.0.7"
 kamadak-exif = "0.6.1"
 
 [profile.release]
