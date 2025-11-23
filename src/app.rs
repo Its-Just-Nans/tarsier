@@ -263,8 +263,12 @@ impl BladvakApp for TarsierApp {
         self.app_central_panel(ui, error_manager)
     }
 
-    fn name(&self) -> String {
+    fn name() -> String {
         env!("CARGO_PKG_NAME").to_string()
+    }
+
+    fn repo_url() -> String {
+        "https://github.com/Its-Just-Nans/tarsier".to_string()
     }
 
     fn side_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {

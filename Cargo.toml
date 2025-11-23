@@ -1,6 +1,6 @@
 [package]
 name = "tarsier"
-version = "1.1.5"
+version = "1.1.6"
 authors = ["n4n5 <its.just.n4n5@gmail.com>"]
 edition = "2021"
 description = "A simple image editor"
@@ -34,7 +34,7 @@ log = "0.4"
 serde = { version = "1", features = ["derive"] }
 image = "0.25.9"
 egui_extras = { version = "0.33", features = ["all_loaders"] }
-bladvak = "1.0.5"
+bladvak = "1.0.6"
 kamadak-exif = "0.6.1"
 
 [profile.release]
