@@ -95,8 +95,8 @@ impl TarsierApp {
             .on_hover_text("Reset the image")
             .clicked()
         {
-            self.img = self.saved_img.clone();
-            self.selection = None;
+            let new_img =  self.saved_img.clone();
+            self.update_image(new_img);
         }
         let ico_image = Image::new(Self::ROTATE_CW_ICON);
         ui.separator();
@@ -109,7 +109,8 @@ impl TarsierApp {
             .on_hover_text("Rotate 90 degrees clockwise")
             .clicked()
         {
-            self.img = self.img.rotate90();
+            let new_img = self.img.rotate90();
+            self.update_image(new_img);
         }
 
         let ico_image = Image::new(Self::ROTATE_CCW_ICON);
@@ -122,7 +123,8 @@ impl TarsierApp {
             .on_hover_text("Rotate 90 degrees counter-clockwise")
             .clicked()
         {
-            self.img = self.img.rotate270();
+            let new_img = self.img.rotate270();
+            self.update_image(new_img);
         }
 
         let ico_image = Image::new(Self::FLIP_H_ICON);
@@ -135,7 +137,8 @@ impl TarsierApp {
             .on_hover_text("Flip horizontally")
             .clicked()
         {
-            self.img = self.img.fliph();
+            let new_img = self.img.fliph();
+            self.update_image(new_img);
         }
         let ico_image = Image::new(Self::FLIP_V_ICON);
         if ui
@@ -147,7 +150,8 @@ impl TarsierApp {
             .on_hover_text("Flip vertically")
             .clicked()
         {
-            self.img = self.img.flipv();
+            let new_img = self.img.flipv();
+            self.update_image(new_img);
         }
         ui.separator();
         let (default_color, background_color) = if ui.visuals().dark_mode {

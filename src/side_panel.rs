@@ -206,7 +206,7 @@ impl TarsierApp {
                 );
             });
         if ui.button("Convert").clicked() {
-            self.img = match self.image_operations.other.convert_to {
+            let new_img = match self.image_operations.other.convert_to {
                 ColorType::L8 => self.img.to_luma8().into(),
                 ColorType::L16 => self.img.to_luma16().into(),
                 ColorType::La8 => self.img.to_luma_alpha8().into(),
@@ -218,7 +218,8 @@ impl TarsierApp {
                 ColorType::Rgba16 => self.img.to_rgba16().into(),
                 ColorType::Rgba32F => self.img.to_rgba32f().into(),
                 _ => self.img.to_rgba8().into(),
-            }
+            };
+            self.update_image(new_img);
         }
 
         let current_selection = self.selection.map(|selection| {
@@ -265,9 +266,11 @@ impl TarsierApp {
                     if let Err(e) = self.img.copy_from(&inner, selection.0, selection.1) {
                         error_manager.add_error(AppError::new_with_source(Arc::new(e)));
                     }
+                    self.updated_image();
                 }
                 None => {
-                    self.img = self.img.huerotate(self.image_operations.hue_rotation);
+                    let new_img = self.img.huerotate(self.image_operations.hue_rotation);
+                    self.update_image(new_img);
                 }
             }
         }
@@ -289,9 +292,11 @@ impl TarsierApp {
                     if let Err(e) = self.img.copy_from(&inner, selection.0, selection.1) {
                         error_manager.add_error(AppError::new_with_source(Arc::new(e)));
                     }
+                    self.updated_image();
                 }
                 None => {
-                    self.img = self.img.brighten(self.image_operations.brighten);
+                    let new_img = self.img.brighten(self.image_operations.brighten);
+                    self.update_image(new_img);
                 }
             }
         }
@@ -313,9 +318,11 @@ impl TarsierApp {
                     if let Err(e) = self.img.copy_from(&inner, selection.0, selection.1) {
                         error_manager.add_error(AppError::new_with_source(Arc::new(e)));
                     }
+                    self.updated_image();
                 }
                 None => {
-                    self.img = self.img.adjust_contrast(self.image_operations.contrast);
+                    let new_img = self.img.adjust_contrast(self.image_operations.contrast);
+                    self.update_image(new_img);
                 }
             }
         }
@@ -373,18 +380,19 @@ impl TarsierApp {
                     self.img.put_pixel(x, y, pixel);
                 }
             }
+            self.updated_image();
         }
     }
 
     /// Button to do an edge detection
     pub fn button_detection(&mut self, ui: &mut egui::Ui) {
         if ui.button("edge detection").clicked() {
-            let m = self.img.filter3x3(&[
+            let new_img = self.img.filter3x3(&[
                 0.0, -1.0, 0.0, //
                 -1.0, 4.0, -1.0, //
                 0.0, -1.0, 0.0, //
             ]);
-            self.img = m;
+            self.update_image(new_img);
         }
     }
 
@@ -420,10 +428,11 @@ impl TarsierApp {
                     if let Err(e) = self.img.copy_from(&inner_mut, selection.0, selection.1) {
                         return Err(AppError::new_with_source(Arc::new(e)));
                     }
+                    self.updated_image();
                 }
                 None => {
                     let full_img = self.img.grayscale();
-                    self.img = match self.img.color() {
+                    let new_img = match self.img.color() {
                         ColorType::L8 => full_img.to_luma8().into(),
                         ColorType::L16 => full_img.to_luma16().into(),
                         ColorType::La8 => full_img.to_luma_alpha8().into(),
@@ -433,7 +442,8 @@ impl TarsierApp {
                         ColorType::Rgba8 => full_img.to_rgba8().into(),
                         ColorType::Rgba16 => full_img.to_rgba16().into(),
                         _ => full_img.to_rgba8().into(),
-                    }
+                    };
+                    self.update_image(new_img);
                 }
             }
         }
@@ -461,9 +471,11 @@ impl TarsierApp {
                     if let Err(e) = self.img.copy_from(&cropped_img, selection.0, selection.1) {
                         return Err(AppError::new_with_source(Arc::new(e)));
                     }
+                    self.updated_image();
                 }
                 None => {
                     self.img.invert();
+                    self.updated_image();
                 }
             }
         }
@@ -495,9 +507,11 @@ impl TarsierApp {
                     if let Err(e) = self.img.copy_from(&inner_mut, selection.0, selection.1) {
                         return Err(AppError::new_with_source(Arc::new(e)));
                     }
+                    self.updated_image();
                 }
                 None => {
-                    self.img = self.img.blur(self.image_operations.blur);
+                    let new_img = self.img.blur(self.image_operations.blur);
+                    self.update_image(new_img);
                 }
             }
         }

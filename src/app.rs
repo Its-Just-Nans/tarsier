@@ -22,6 +22,10 @@ pub struct TarsierApp {
     #[serde(skip)]
     pub saved_img: image::DynamicImage,
 
+    /// Image texture
+    #[serde(skip)]
+    pub texture: Option<egui::TextureHandle>,
+
     /// Exif of the image
     #[serde(skip)]
     pub exif: Option<exif::Exif>,
@@ -70,6 +74,7 @@ impl Default for TarsierApp {
         Self {
             saved_img: img.clone(),
             img,
+            texture: None,
             exif: None,
             selection: None,
             cursor_op_as_window: false,
@@ -177,8 +182,7 @@ impl TarsierApp {
                     let cropped_img = self
                         .img
                         .crop_imm(min_x, min_y, max_x - min_x, max_y - min_y);
-                    self.img = cropped_img;
-                    self.selection = None;
+                    self.update_image(cropped_img);
                 }
             }
         }
@@ -187,7 +191,7 @@ impl TarsierApp {
     /// Update the image file
     fn update_file(&mut self, new_img: DynamicImage, new_img_bytes: Option<&[u8]>) {
         self.saved_img = new_img.clone();
-        self.img = new_img.clone();
+        self.update_image(new_img);
         let exifreader = exif::Reader::new();
         if let Some(bytes) = new_img_bytes {
             let cursor = Cursor::new(bytes);
@@ -202,6 +206,17 @@ impl TarsierApp {
         } else {
             self.exif = None;
         }
+    }
+
+    /// Update image
+    pub(crate) fn update_image(&mut self, new_img: DynamicImage) {
+        self.img = new_img;
+        self.updated_image();
+    }
+
+    /// Post update image
+    pub(crate) fn updated_image(&mut self) {
+        self.texture = None;
         self.selection = None;
     }
 }

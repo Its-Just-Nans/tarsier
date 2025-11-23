@@ -2,7 +2,7 @@
 use std::sync::Arc;
 
 use bladvak::errors::ErrorManager;
-use egui::{load::SizedTexture, ColorImage, Image, ImageData, Pos2, Sense, TextureOptions, Vec2};
+use egui::{ColorImage, Image, ImageData, Pos2, Sense, TextureOptions, Vec2};
 
 use crate::{side_panel::EditMode, TarsierApp};
 
@@ -13,21 +13,22 @@ impl TarsierApp {
         ui: &mut egui::Ui,
         error_manager: &mut ErrorManager,
     ) {
-        let size = [self.img.width() as _, self.img.height() as _];
-        let image_buffer = self.img.to_rgba8();
-        let pixels = image_buffer.as_flat_samples();
-        let image = ColorImage::from_rgba_unmultiplied(size, pixels.as_slice());
-
-        let svg_texture = ui.ctx().load_texture(
-            "img",
-            ImageData::Color(Arc::new(image)),
-            TextureOptions::default(),
-        );
-
-        let sized_texture = SizedTexture::from_handle(&svg_texture);
-
         egui::ScrollArea::both().show_viewport(ui, |ui, viewport| {
-            let response = ui.add(Image::new(sized_texture).sense(Sense::click_and_drag()));
+            let size = [self.img.width() as _, self.img.height() as _];
+            let image_texture = self.texture.get_or_insert_with(|| {
+                let image_buffer = self.img.to_rgba8();
+                let pixels = image_buffer.as_flat_samples();
+                let image = ColorImage::from_rgba_unmultiplied(size, pixels.as_slice());
+                ui.ctx().load_texture(
+                    "img",
+                    ImageData::Color(Arc::new(image)),
+                    TextureOptions::default(),
+                )
+            });
+            let response = ui.add(
+                Image::new((image_texture.id(), image_texture.size_vec2()))
+                    .sense(Sense::click_and_drag()),
+            );
             let img_position = response.rect;
             let ecart_x = img_position.min.x + viewport.min.x;
             let ecart_y = img_position.min.y + viewport.min.y;
