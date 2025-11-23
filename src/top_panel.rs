@@ -95,7 +95,7 @@ impl TarsierApp {
             .on_hover_text("Reset the image")
             .clicked()
         {
-            let new_img =  self.saved_img.clone();
+            let new_img = self.saved_img.clone();
             self.update_image(new_img);
         }
         let ico_image = Image::new(Self::ROTATE_CW_ICON);
