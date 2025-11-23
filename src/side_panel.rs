@@ -221,31 +221,61 @@ impl TarsierApp {
             };
             self.update_image(new_img);
         }
-
-        let current_selection = self.selection.map(|selection| {
-            (
-                selection.min.x as u32,
-                selection.min.y as u32,
-                selection.max.x as u32,
-                selection.max.y as u32,
-            )
-        });
-
         ui.separator();
-        self.button_outline(ui);
+        self.button_outline(ui, error_manager);
         ui.separator();
-        self.button_detection(ui);
-        ui.separator();
-        if let Err(e) = self.button_grayscale(ui, &current_selection) {
-            error_manager.add_error(AppError::new_with_source(Arc::new(e)));
+        if ui.button("edge detection").clicked() {
+            self.apply_op(
+                |img| {
+                    img.filter3x3(&[
+                        0.0, -1.0, 0.0, //
+                        -1.0, 4.0, -1.0, //
+                        0.0, -1.0, 0.0, //
+                    ])
+                },
+                error_manager,
+            );
         }
         ui.separator();
-        if let Err(e) = self.button_invert(ui, &current_selection) {
-            error_manager.add_error(AppError::new_with_source(Arc::new(e)));
+        if ui.button("Grayscale").clicked() {
+            let color = self.img.color();
+            self.apply_op(
+                |img| {
+                    let inner = img.grayscale();
+                    match color {
+                        ColorType::L8 => inner.to_luma8().into(),
+                        ColorType::L16 => inner.to_luma16().into(),
+                        ColorType::La8 => inner.to_luma_alpha8().into(),
+                        ColorType::La16 => inner.to_luma_alpha16().into(),
+                        ColorType::Rgb8 => inner.to_rgb8().into(),
+                        ColorType::Rgb16 => inner.to_rgb16().into(),
+                        ColorType::Rgba8 => inner.to_rgba8().into(),
+                        ColorType::Rgba16 => inner.to_rgba16().into(),
+                        _ => inner.to_rgba8().into(),
+                    }
+                },
+                error_manager,
+            );
         }
         ui.separator();
-        if let Err(e) = self.button_blur(ui, &current_selection) {
-            error_manager.add_error(AppError::new_with_source(Arc::new(e)));
+        if ui.button("invert").clicked() {
+            self.apply_op(
+                |img| {
+                    let mut copied_img = img.clone();
+                    copied_img.invert();
+                    copied_img
+                },
+                error_manager,
+            );
+        }
+        ui.separator();
+        ui.add(egui::Slider::new(
+            &mut self.image_operations.blur,
+            0.0..=100.0,
+        ));
+        if ui.button("Blur").clicked() {
+            let blur = self.image_operations.blur;
+            self.apply_op(|img| img.blur(blur), error_manager);
         }
         ui.separator();
         ui.add(egui::Slider::new(
@@ -254,25 +284,8 @@ impl TarsierApp {
         ));
 
         if ui.button("hue rotate").clicked() {
-            match current_selection {
-                Some(selection) => {
-                    let cropped_img = self.img.crop(
-                        selection.0,
-                        selection.1,
-                        selection.2 - selection.0,
-                        selection.3 - selection.1,
-                    );
-                    let inner = cropped_img.huerotate(self.image_operations.hue_rotation);
-                    if let Err(e) = self.img.copy_from(&inner, selection.0, selection.1) {
-                        error_manager.add_error(AppError::new_with_source(Arc::new(e)));
-                    }
-                    self.updated_image();
-                }
-                None => {
-                    let new_img = self.img.huerotate(self.image_operations.hue_rotation);
-                    self.update_image(new_img);
-                }
-            }
+            let hue_rotation = self.image_operations.hue_rotation;
+            self.apply_op(|img| img.huerotate(hue_rotation), error_manager);
         }
         ui.separator();
         ui.add(egui::Slider::new(
@@ -280,25 +293,8 @@ impl TarsierApp {
             -100..=100,
         ));
         if ui.button("brighten").clicked() {
-            match current_selection {
-                Some(selection) => {
-                    let cropped_img = self.img.crop(
-                        selection.0,
-                        selection.1,
-                        selection.2 - selection.0,
-                        selection.3 - selection.1,
-                    );
-                    let inner = cropped_img.brighten(self.image_operations.brighten);
-                    if let Err(e) = self.img.copy_from(&inner, selection.0, selection.1) {
-                        error_manager.add_error(AppError::new_with_source(Arc::new(e)));
-                    }
-                    self.updated_image();
-                }
-                None => {
-                    let new_img = self.img.brighten(self.image_operations.brighten);
-                    self.update_image(new_img);
-                }
-            }
+            let brighten = self.image_operations.brighten;
+            self.apply_op(|img| img.brighten(brighten), error_manager);
         }
         ui.separator();
         ui.add(egui::Slider::new(
@@ -306,24 +302,41 @@ impl TarsierApp {
             -50.0..=50.0,
         ));
         if ui.button("contrast").clicked() {
-            match current_selection {
-                Some(selection) => {
-                    let cropped_img = self.img.crop(
-                        selection.0,
-                        selection.1,
-                        selection.2 - selection.0,
-                        selection.3 - selection.1,
-                    );
-                    let inner = cropped_img.adjust_contrast(self.image_operations.contrast);
-                    if let Err(e) = self.img.copy_from(&inner, selection.0, selection.1) {
-                        error_manager.add_error(AppError::new_with_source(Arc::new(e)));
-                    }
-                    self.updated_image();
+            let contrast = self.image_operations.contrast;
+            self.apply_op(|img| img.adjust_contrast(contrast), error_manager);
+        }
+    }
+
+    /// Apply operation
+    pub(crate) fn apply_op<F>(&mut self, func: F, error_manager: &mut ErrorManager)
+    where
+        F: Fn(&DynamicImage) -> DynamicImage,
+    {
+        let current_selection = self.selection.map(|selection| {
+            (
+                selection.min.x as u32,
+                selection.min.y as u32,
+                selection.max.x as u32,
+                selection.max.y as u32,
+            )
+        });
+        match current_selection {
+            Some(selection) => {
+                let cropped_img = self.img.crop(
+                    selection.0,
+                    selection.1,
+                    selection.2 - selection.0,
+                    selection.3 - selection.1,
+                );
+                let inner = func(&cropped_img);
+                if let Err(e) = self.img.copy_from(&inner, selection.0, selection.1) {
+                    error_manager.add_error(AppError::new_with_source(Arc::new(e)));
                 }
-                None => {
-                    let new_img = self.img.adjust_contrast(self.image_operations.contrast);
-                    self.update_image(new_img);
-                }
+                self.updated_image();
+            }
+            None => {
+                let new_img = func(&self.img);
+                self.update_image(new_img);
             }
         }
     }
@@ -346,176 +359,48 @@ impl TarsierApp {
     }
 
     /// Button to show the outline
-    pub fn button_outline(&mut self, ui: &mut egui::Ui) {
+    pub fn button_outline(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
         if ui.button("sobel outline").clicked() {
-            let sobel_x = self.img.filter3x3(&[
-                -1.0, 0.0, 1.0, //
-                -2.0, 0.0, 2.0, //
-                -1.0, 0.0, 1.0, //
-            ]);
-            let sobel_x2 = self.img.filter3x3(&[
-                1.0, 0.0, -1.0, //
-                2.0, 0.0, -2.0, //
-                1.0, 0.0, -1.0, //
-            ]);
-            let sobel_y = self.img.filter3x3(&[
-                -1.0, -2.0, -1.0, //
-                0.0, 0.0, 0.0, //
-                1.0, 2.0, 1.0, //
-            ]);
-            let sobel_y2 = self.img.filter3x3(&[
-                1.0, 2.0, 1.0, //
-                0.0, 0.0, 0.0, //
-                -1.0, -2.0, -1.0, //
-            ]);
-            for y in 0..self.img.height() {
-                for x in 0..self.img.width() {
-                    let mut pixel = sobel_x.get_pixel(x, y);
-                    let pixel_y = sobel_y.get_pixel(x, y);
-                    pixel.blend(&pixel_y);
-                    let pixel_x2 = sobel_x2.get_pixel(x, y);
-                    pixel.blend(&pixel_x2);
-                    let pixel_y2 = sobel_y2.get_pixel(x, y);
-                    pixel.blend(&pixel_y2);
-                    self.img.put_pixel(x, y, pixel);
-                }
-            }
-            self.updated_image();
-        }
-    }
-
-    /// Button to do an edge detection
-    pub fn button_detection(&mut self, ui: &mut egui::Ui) {
-        if ui.button("edge detection").clicked() {
-            let new_img = self.img.filter3x3(&[
-                0.0, -1.0, 0.0, //
-                -1.0, 4.0, -1.0, //
-                0.0, -1.0, 0.0, //
-            ]);
-            self.update_image(new_img);
-        }
-    }
-
-    /// Button to grayscale the image
-    /// # Errors
-    /// Error if fail to copy
-    pub fn button_grayscale(
-        &mut self,
-        ui: &mut egui::Ui,
-        current_selection: &Option<(u32, u32, u32, u32)>,
-    ) -> Result<(), AppError> {
-        if ui.button("Grayscale").clicked() {
-            match current_selection {
-                Some(selection) => {
-                    let cropped_img = self.img.crop(
-                        selection.0,
-                        selection.1,
-                        selection.2 - selection.0,
-                        selection.3 - selection.1,
-                    );
-                    let inner_mut = cropped_img.grayscale();
-                    let inner_mut: DynamicImage = match self.img.color() {
-                        ColorType::L8 => inner_mut.to_luma8().into(),
-                        ColorType::L16 => inner_mut.to_luma16().into(),
-                        ColorType::La8 => inner_mut.to_luma_alpha8().into(),
-                        ColorType::La16 => inner_mut.to_luma_alpha16().into(),
-                        ColorType::Rgb8 => inner_mut.to_rgb8().into(),
-                        ColorType::Rgb16 => inner_mut.to_rgb16().into(),
-                        ColorType::Rgba8 => inner_mut.to_rgba8().into(),
-                        ColorType::Rgba16 => inner_mut.to_rgba16().into(),
-                        _ => inner_mut.to_rgba8().into(),
-                    };
-                    if let Err(e) = self.img.copy_from(&inner_mut, selection.0, selection.1) {
-                        return Err(AppError::new_with_source(Arc::new(e)));
+            self.apply_op(
+                |img| {
+                    let mut img = img.clone();
+                    let sobel_x = img.filter3x3(&[
+                        -1.0, 0.0, 1.0, //
+                        -2.0, 0.0, 2.0, //
+                        -1.0, 0.0, 1.0, //
+                    ]);
+                    let sobel_x2 = img.filter3x3(&[
+                        1.0, 0.0, -1.0, //
+                        2.0, 0.0, -2.0, //
+                        1.0, 0.0, -1.0, //
+                    ]);
+                    let sobel_y = img.filter3x3(&[
+                        -1.0, -2.0, -1.0, //
+                        0.0, 0.0, 0.0, //
+                        1.0, 2.0, 1.0, //
+                    ]);
+                    let sobel_y2 = img.filter3x3(&[
+                        1.0, 2.0, 1.0, //
+                        0.0, 0.0, 0.0, //
+                        -1.0, -2.0, -1.0, //
+                    ]);
+                    for y in 0..img.height() {
+                        for x in 0..img.width() {
+                            let mut pixel = sobel_x.get_pixel(x, y);
+                            let pixel_y = sobel_y.get_pixel(x, y);
+                            pixel.blend(&pixel_y);
+                            let pixel_x2 = sobel_x2.get_pixel(x, y);
+                            pixel.blend(&pixel_x2);
+                            let pixel_y2 = sobel_y2.get_pixel(x, y);
+                            pixel.blend(&pixel_y2);
+                            img.put_pixel(x, y, pixel);
+                        }
                     }
-                    self.updated_image();
-                }
-                None => {
-                    let full_img = self.img.grayscale();
-                    let new_img = match self.img.color() {
-                        ColorType::L8 => full_img.to_luma8().into(),
-                        ColorType::L16 => full_img.to_luma16().into(),
-                        ColorType::La8 => full_img.to_luma_alpha8().into(),
-                        ColorType::La16 => full_img.to_luma_alpha16().into(),
-                        ColorType::Rgb8 => full_img.to_rgb8().into(),
-                        ColorType::Rgb16 => full_img.to_rgb16().into(),
-                        ColorType::Rgba8 => full_img.to_rgba8().into(),
-                        ColorType::Rgba16 => full_img.to_rgba16().into(),
-                        _ => full_img.to_rgba8().into(),
-                    };
-                    self.update_image(new_img);
-                }
-            }
+                    img
+                },
+                error_manager,
+            );
         }
-        Ok(())
-    }
-
-    /// Button to invert the image
-    /// # Errors
-    /// Error if fail to copy
-    pub fn button_invert(
-        &mut self,
-        ui: &mut egui::Ui,
-        current_selection: &Option<(u32, u32, u32, u32)>,
-    ) -> Result<(), AppError> {
-        if ui.button("invert").clicked() {
-            match current_selection {
-                Some(selection) => {
-                    let mut cropped_img = self.img.crop(
-                        selection.0,
-                        selection.1,
-                        selection.2 - selection.0,
-                        selection.3 - selection.1,
-                    );
-                    cropped_img.invert();
-                    if let Err(e) = self.img.copy_from(&cropped_img, selection.0, selection.1) {
-                        return Err(AppError::new_with_source(Arc::new(e)));
-                    }
-                    self.updated_image();
-                }
-                None => {
-                    self.img.invert();
-                    self.updated_image();
-                }
-            }
-        }
-        Ok(())
-    }
-
-    /// Button to blur the image
-    /// # Errors
-    /// Error if fail to copy
-    pub fn button_blur(
-        &mut self,
-        ui: &mut egui::Ui,
-        current_selection: &Option<(u32, u32, u32, u32)>,
-    ) -> Result<(), AppError> {
-        ui.add(egui::Slider::new(
-            &mut self.image_operations.blur,
-            0.0..=100.0,
-        ));
-        if ui.button("Blur").clicked() {
-            match current_selection {
-                Some(selection) => {
-                    let cropped_img = self.img.crop(
-                        selection.0,
-                        selection.1,
-                        selection.2 - selection.0,
-                        selection.3 - selection.1,
-                    );
-                    let inner_mut = cropped_img.blur(self.image_operations.blur);
-                    if let Err(e) = self.img.copy_from(&inner_mut, selection.0, selection.1) {
-                        return Err(AppError::new_with_source(Arc::new(e)));
-                    }
-                    self.updated_image();
-                }
-                None => {
-                    let new_img = self.img.blur(self.image_operations.blur);
-                    self.update_image(new_img);
-                }
-            }
-        }
-        Ok(())
     }
 
     /// Draw a point
@@ -542,5 +427,6 @@ impl TarsierApp {
                 }
             }
         }
+        self.updated_image();
     }
 }

@@ -251,8 +251,8 @@ impl BladvakApp for TarsierApp {
         Ok(())
     }
 
-    fn top_panel(&mut self, ui: &mut egui::Ui, _error_manager: &mut ErrorManager) {
-        self.app_top_panel(ui)
+    fn top_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
+        self.app_top_panel(ui, error_manager);
     }
 
     fn menu_file(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {

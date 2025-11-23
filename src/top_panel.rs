@@ -82,7 +82,7 @@ impl TarsierApp {
     }
 
     /// Show the top panel
-    pub(crate) fn app_top_panel(&mut self, ui: &mut egui::Ui) {
+    pub(crate) fn app_top_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
         let is_dark_theme = ui.ctx().style().visuals.dark_mode;
         ui.separator();
         let ico_image = Image::new(Self::RESET_ICON);
@@ -109,8 +109,7 @@ impl TarsierApp {
             .on_hover_text("Rotate 90 degrees clockwise")
             .clicked()
         {
-            let new_img = self.img.rotate90();
-            self.update_image(new_img);
+            self.apply_op(|img| img.rotate90(), error_manager);
         }
 
         let ico_image = Image::new(Self::ROTATE_CCW_ICON);
@@ -123,8 +122,7 @@ impl TarsierApp {
             .on_hover_text("Rotate 90 degrees counter-clockwise")
             .clicked()
         {
-            let new_img = self.img.rotate270();
-            self.update_image(new_img);
+            self.apply_op(|img| img.rotate270(), error_manager);
         }
 
         let ico_image = Image::new(Self::FLIP_H_ICON);
@@ -137,8 +135,7 @@ impl TarsierApp {
             .on_hover_text("Flip horizontally")
             .clicked()
         {
-            let new_img = self.img.fliph();
-            self.update_image(new_img);
+            self.apply_op(|img| img.fliph(), error_manager);
         }
         let ico_image = Image::new(Self::FLIP_V_ICON);
         if ui
@@ -150,8 +147,7 @@ impl TarsierApp {
             .on_hover_text("Flip vertically")
             .clicked()
         {
-            let new_img = self.img.flipv();
-            self.update_image(new_img);
+            self.apply_op(|img| img.flipv(), error_manager);
         }
         ui.separator();
         let (default_color, background_color) = if ui.visuals().dark_mode {
