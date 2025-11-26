@@ -1,23 +1,24 @@
 //! Top panel
-use std::{io::Cursor, path::PathBuf};
-
+use bladvak::eframe::egui::{
+    self, include_image, text::LayoutJob, Color32, ColorImage, Image, ImageSource, TextFormat,
+};
 use bladvak::errors::ErrorManager;
-use egui::{text::LayoutJob, Color32, ColorImage, Image, ImageSource, TextFormat};
 use image::ImageFormat;
+use std::{io::Cursor, path::PathBuf};
 
 use crate::{side_panel::EditMode, TarsierApp};
 
 impl TarsierApp {
     /// Reset icon
-    const RESET_ICON: ImageSource<'_> = egui::include_image!("../assets/icon_x-circle.png");
+    const RESET_ICON: ImageSource<'_> = include_image!("../assets/icon_x-circle.png");
     /// Rotate icon
-    const ROTATE_CCW_ICON: ImageSource<'_> = egui::include_image!("../assets/icon_rotate_ccw.png");
+    const ROTATE_CCW_ICON: ImageSource<'_> = include_image!("../assets/icon_rotate_ccw.png");
     /// Rotate icon inverse
-    const ROTATE_CW_ICON: ImageSource<'_> = egui::include_image!("../assets/icon_rotate_cw.png");
+    const ROTATE_CW_ICON: ImageSource<'_> = include_image!("../assets/icon_rotate_cw.png");
     /// Flip horizontal icon
-    const FLIP_H_ICON: ImageSource<'_> = egui::include_image!("../assets/icon_flip_h.png");
+    const FLIP_H_ICON: ImageSource<'_> = include_image!("../assets/icon_flip_h.png");
     /// Flip vertical icon
-    const FLIP_V_ICON: ImageSource<'_> = egui::include_image!("../assets/icon_flip_v.png");
+    const FLIP_V_ICON: ImageSource<'_> = include_image!("../assets/icon_flip_v.png");
 
     /// Show the file menu
     pub(crate) fn app_menu_file(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {

@@ -5,7 +5,7 @@ use bladvak::app::Bladvak;
 use tarsier::TarsierApp;
 
 #[cfg(not(target_arch = "wasm32"))]
-fn main() -> eframe::Result {
+fn main() -> bladvak::eframe::Result {
     Bladvak::<TarsierApp>::bladvak_main(&include_bytes!("../assets/icon-256.png")[..])
 }
 

@@ -1,9 +1,9 @@
 //! Side panel
 use std::{fmt::Display, sync::Arc};
 
+use bladvak::eframe::egui;
+use bladvak::egui_extras::{Column, TableBuilder};
 use bladvak::errors::{AppError, ErrorManager};
-use egui::Ui;
-use egui_extras::{Column, TableBuilder};
 use image::{ColorType, DynamicImage, GenericImage, GenericImageView, Pixel};
 
 use crate::TarsierApp;
@@ -84,7 +84,7 @@ impl Default for ImageOperations {
 
 impl TarsierApp {
     /// Side panel
-    pub(crate) fn app_side_panel(&mut self, ui: &mut Ui, error_manager: &mut ErrorManager) {
+    pub(crate) fn app_side_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
         if !self.image_info_as_window {
             self.image_info(ui);
             ui.separator();
@@ -99,7 +99,7 @@ impl TarsierApp {
     }
 
     /// Image info
-    pub(crate) fn image_info(&mut self, ui: &mut Ui) {
+    pub(crate) fn image_info(&mut self, ui: &mut egui::Ui) {
         ui.heading("Image Info");
         ui.label(format!("Size: {}x{}", self.img.width(), self.img.height()));
         ui.label(format!("Format: {:?}", self.img.color()));
@@ -149,7 +149,7 @@ impl TarsierApp {
     }
 
     /// Side panel content
-    pub(crate) fn image_operations(&mut self, ui: &mut Ui, error_manager: &mut ErrorManager) {
+    pub(crate) fn image_operations(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
         ui.label("Convert");
         egui::ComboBox::from_id_salt("convert_box")
             .selected_text(format!("{:?}", self.image_operations.other.convert_to))

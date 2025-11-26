@@ -1,14 +1,18 @@
 //! Tarsier App
-use std::{fmt::Debug, io::Cursor, path::PathBuf, sync::Arc};
-
-use crate::side_panel::{EditMode, ImageOperations};
+use bladvak::eframe::{
+    self,
+    egui::{self, Color32, Image, ImageSource, Pos2},
+    CreationContext,
+};
 use bladvak::{
     app::BladvakApp,
     errors::{AppError, ErrorManager},
 };
-use eframe::CreationContext;
-use egui::{Color32, Image, ImageSource, Pos2};
+use bladvak::{egui_extras, log};
 use image::{DynamicImage, ImageReader};
+use std::{fmt::Debug, io::Cursor, path::PathBuf, sync::Arc};
+
+use crate::side_panel::{EditMode, ImageOperations};
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]

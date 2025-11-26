@@ -1,8 +1,9 @@
 //! Central panel
-use std::sync::Arc;
-
+use bladvak::eframe::egui::{
+    self, ColorImage, Image, ImageData, Pos2, Sense, TextureOptions, Vec2,
+};
 use bladvak::errors::ErrorManager;
-use egui::{ColorImage, Image, ImageData, Pos2, Sense, TextureOptions, Vec2};
+use std::sync::Arc;
 
 use crate::{side_panel::EditMode, TarsierApp};
 
