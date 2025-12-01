@@ -74,7 +74,7 @@ const ASSET: &[u8] = include_bytes!("../assets/icon-1024.png");
 
 impl Default for TarsierApp {
     fn default() -> Self {
-        let img = Self::load_default_image();
+        let (img, _) = Self::load_default_image();
         Self {
             saved_img: img.clone(),
             img,
@@ -113,18 +113,15 @@ impl TarsierApp {
         if args.len() > 1 {
             use image::ImageReader;
             let path = &args[1];
-            match ImageReader::open(path) {
-                Ok(reader) => match reader.decode() {
-                    Ok(img) => {
-                        let mut app = Self::new_app(cc);
-                        app.update_file(img, None);
-                        Ok(app)
-                    }
-                    Err(e) => {
-                        eprintln!("Failed to load image '{path}': {e}");
-                        Err(AppError::new(format!("Failed to load image '{path}': {e}")))
-                    }
-                },
+            let bytes = std::fs::read(path)?;
+            let cursor = Cursor::new(bytes.as_ref());
+            let img_reader = ImageReader::new(cursor.clone());
+            match img_reader.decode() {
+                Ok(img) => {
+                    let mut app = Self::new_app(cc);
+                    app.update_file(img, Some(cursor));
+                    Ok(app)
+                }
                 Err(e) => {
                     eprintln!("Failed to load image '{path}': {e}");
                     Err(AppError::new(format!("Failed to load image '{path}': {e}")))
@@ -136,12 +133,14 @@ impl TarsierApp {
     }
 
     /// Load the default image
-    fn load_default_image() -> DynamicImage {
-        ImageReader::new(Cursor::new(ASSET))
+    fn load_default_image() -> (DynamicImage, Cursor<&'static [u8]>) {
+        let cursor = Cursor::new(ASSET);
+        let img = ImageReader::new(cursor.clone())
             .with_guessed_format()
             .unwrap()
             .decode()
-            .unwrap()
+            .unwrap();
+        (img, cursor)
     }
 
     /// Crop icon
@@ -193,13 +192,12 @@ impl TarsierApp {
     }
 
     /// Update the image file
-    fn update_file(&mut self, new_img: DynamicImage, new_img_bytes: Option<&[u8]>) {
+    fn update_file(&mut self, new_img: DynamicImage, opt_cursor: Option<Cursor<&[u8]>>) {
         self.saved_img = new_img.clone();
         self.update_image(new_img);
         let exifreader = exif::Reader::new();
-        if let Some(bytes) = new_img_bytes {
-            let cursor = Cursor::new(bytes);
-            let mut bufreader = std::io::BufReader::new(cursor);
+        if let Some(bytes) = opt_cursor {
+            let mut bufreader = std::io::BufReader::new(bytes);
             match exifreader.read_from_container(&mut bufreader) {
                 Ok(exif) => self.exif = Some(exif),
                 Err(e) => {
@@ -233,7 +231,8 @@ impl BladvakApp for TarsierApp {
         ui.checkbox(&mut self.operations_as_window, "Operations windows");
         ui.separator();
         if ui.button("Default image").clicked() {
-            self.update_file(Self::load_default_image(), None);
+            let (img, cursor) = Self::load_default_image();
+            self.update_file(img, Some(cursor));
         }
     }
 
@@ -251,7 +250,8 @@ impl BladvakApp for TarsierApp {
             Ok(img) => img,
             Err(e) => return Err(AppError::new_with_source(Arc::new(e))),
         };
-        self.update_file(img, Some(bytes));
+        let cursor = Cursor::new(bytes);
+        self.update_file(img, Some(cursor));
         Ok(())
     }
 
