@@ -105,42 +105,43 @@ impl TarsierApp {
         ui.label(format!("Format: {:?}", self.img.color()));
         match &self.exif {
             Some(exif) => {
-                // egui::ScrollArea::vertical()
-                //     .max_height(100.0)
-                //     .show(ui, |scroll_ui| {
-                TableBuilder::new(ui)
-                    .max_scroll_height(100.0)
-                    .striped(true)
-                    .column(Column::auto())
-                    .column(Column::auto())
-                    .column(Column::remainder())
-                    .header(20.0, |mut header| {
-                        header.col(|ui| {
-                            ui.label("Exif tag");
-                        });
-                        header.col(|ui| {
-                            ui.label("IFD idx");
-                        });
-                        header.col(|ui| {
-                            ui.label("exif value");
-                        });
-                    })
-                    .body(|mut body| {
-                        for field in exif.fields() {
-                            body.row(30.0, |mut row| {
-                                row.col(|ui| {
-                                    ui.label(format!("{}", field.tag));
-                                });
-                                row.col(|ui| {
-                                    ui.label(format!("{}", field.ifd_num));
-                                });
-                                row.col(|ui| {
-                                    ui.label(format!("{}", field.display_value().with_unit(exif)));
-                                });
+                ui.collapsing("Exif info", |ui| {
+                    TableBuilder::new(ui)
+                        .max_scroll_height(100.0)
+                        .striped(true)
+                        .column(Column::auto())
+                        .column(Column::auto())
+                        .column(Column::remainder())
+                        .header(20.0, |mut header| {
+                            header.col(|ui| {
+                                ui.label("Exif tag");
                             });
-                        }
-                    });
-                // });
+                            header.col(|ui| {
+                                ui.label("IFD idx");
+                            });
+                            header.col(|ui| {
+                                ui.label("exif value");
+                            });
+                        })
+                        .body(|mut body| {
+                            for field in exif.fields() {
+                                body.row(30.0, |mut row| {
+                                    row.col(|ui| {
+                                        ui.label(format!("{}", field.tag));
+                                    });
+                                    row.col(|ui| {
+                                        ui.label(format!("{}", field.ifd_num));
+                                    });
+                                    row.col(|ui| {
+                                        ui.label(format!(
+                                            "{}",
+                                            field.display_value().with_unit(exif)
+                                        ));
+                                    });
+                                });
+                            }
+                        });
+                });
             }
             None => {
                 ui.label("No exif detected");
