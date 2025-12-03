@@ -29,11 +29,17 @@ impl TarsierApp {
                     "image.{}",
                     ImageFormat::Png.extensions_str()[0]
                 ))));
-                if let Some(save_p) = error_manager.handle_error(save_path) {
-                    self.save_path = save_p.clone();
-                    if let Some(path_to_save) = save_p {
-                        let res = self.save_image(ImageFormat::Png, &path_to_save);
-                        error_manager.handle_error(res);
+                match save_path {
+                    Ok(save_p) => {
+                        self.save_path = save_p.clone();
+                        if let Some(path_to_save) = save_p {
+                            if let Err(err) = self.save_image(ImageFormat::Png, &path_to_save) {
+                                error_manager.add_error(err);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        error_manager.add_error(e);
                     }
                 }
             }
@@ -43,11 +49,17 @@ impl TarsierApp {
                     "image.{}",
                     ImageFormat::Jpeg.extensions_str()[0]
                 ))));
-                if let Some(save_p) = error_manager.handle_error(save_path) {
-                    self.save_path = save_p.clone();
-                    if let Some(path_to_save) = save_p {
-                        let res = self.save_image(ImageFormat::Jpeg, &path_to_save);
-                        error_manager.handle_error(res);
+                match save_path {
+                    Ok(save_p) => {
+                        self.save_path = save_p.clone();
+                        if let Some(path_to_save) = save_p {
+                            if let Err(err) = self.save_image(ImageFormat::Jpeg, &path_to_save) {
+                                error_manager.add_error(err);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        error_manager.add_error(e);
                     }
                 }
             }
@@ -57,11 +69,17 @@ impl TarsierApp {
                     "image.{}",
                     ImageFormat::Bmp.extensions_str()[0]
                 ))));
-                if let Some(save_p) = error_manager.handle_error(save_path) {
-                    self.save_path = save_p.clone();
-                    if let Some(path_to_save) = save_p {
-                        let res = self.save_image(ImageFormat::Bmp, &path_to_save);
-                        error_manager.handle_error(res);
+                match save_path {
+                    Ok(save_p) => {
+                        self.save_path = save_p.clone();
+                        if let Some(path_to_save) = save_p {
+                            if let Err(err) = self.save_image(ImageFormat::Bmp, &path_to_save) {
+                                error_manager.add_error(err);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        error_manager.add_error(e);
                     }
                 }
             }
@@ -71,11 +89,17 @@ impl TarsierApp {
                     "image.{}",
                     ImageFormat::Gif.extensions_str()[0]
                 ))));
-                if let Some(save_p) = error_manager.handle_error(save_path) {
-                    self.save_path = save_p.clone();
-                    if let Some(path_to_save) = save_p {
-                        let res = self.save_image(ImageFormat::Gif, &path_to_save);
-                        error_manager.handle_error(res);
+                match save_path {
+                    Ok(save_p) => {
+                        self.save_path = save_p.clone();
+                        if let Some(path_to_save) = save_p {
+                            if let Err(err) = self.save_image(ImageFormat::Gif, &path_to_save) {
+                                error_manager.add_error(err);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        error_manager.add_error(e);
                     }
                 }
             }
