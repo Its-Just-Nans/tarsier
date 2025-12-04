@@ -135,6 +135,8 @@ impl TarsierApp {
     /// Load the default image
     fn load_default_image() -> (DynamicImage, Cursor<&'static [u8]>) {
         let cursor = Cursor::new(ASSET);
+        // allow unwrap_used since asset is static
+        #[allow(clippy::unwrap_used)]
         let img = ImageReader::new(cursor.clone())
             .with_guessed_format()
             .unwrap()
