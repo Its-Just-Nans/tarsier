@@ -98,13 +98,7 @@ impl TarsierApp {
         // This is also where you can customize the look and feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
         egui_extras::install_image_loaders(&cc.egui_ctx);
-        // Load previous app state (if any).
-        // Note that you must enable the `persistence` feature for this to work.
-        if let Some(storage) = cc.storage {
-            return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
-        }
-
-        Default::default()
+        bladvak::utils::get_saved_app_state::<Self>(cc)
     }
     /// Create a new Tarsier App with an image
     /// # Errors
@@ -114,17 +108,21 @@ impl TarsierApp {
             use image::ImageReader;
             let path = &args[1];
             let bytes = std::fs::read(path)?;
-            let cursor = Cursor::new(bytes.as_ref());
-            let img_reader = ImageReader::new(cursor.clone());
-            match img_reader.decode() {
+            let cursor: Cursor<&[u8]> = Cursor::new(bytes.as_ref());
+            let img_reader = ImageReader::new(cursor);
+            match img_reader.with_guessed_format()?.decode() {
                 Ok(img) => {
                     let mut app = Self::new_app(cc);
-                    app.update_file(img, Some(cursor));
+                    let cursor_data = Cursor::new(bytes.as_ref());
+                    app.update_file(img, Some(cursor_data));
                     Ok(app)
                 }
                 Err(e) => {
                     eprintln!("Failed to load image '{path}': {e}");
-                    Err(AppError::new(format!("Failed to load image '{path}': {e}")))
+                    Err(AppError::new_with_source(
+                        format!("Failed to load image '{path}'"),
+                        Arc::new(e),
+                    ))
                 }
             }
         } else {
@@ -250,7 +248,12 @@ impl BladvakApp for TarsierApp {
         let img_reader = ImageReader::new(Cursor::new(bytes)).with_guessed_format()?;
         let img = match img_reader.decode() {
             Ok(img) => img,
-            Err(e) => return Err(AppError::new_with_source(Arc::new(e))),
+            Err(e) => {
+                return Err(AppError::new_with_source(
+                    "Cannot decode image",
+                    Arc::new(e),
+                ))
+            }
         };
         let cursor = Cursor::new(bytes);
         self.update_file(img, Some(cursor));

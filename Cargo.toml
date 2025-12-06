@@ -1,6 +1,6 @@
 [package]
 name = "tarsier"
-version = "1.1.10"
+version = "1.1.11"
 authors = ["n4n5 <its.just.n4n5@gmail.com>"]
 edition = "2021"
 description = "A simple image editor"
@@ -19,7 +19,7 @@ all-features = true
 targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 
 [dependencies]
-bladvak = "1.1.1"
+bladvak = "1.1.3"
 # bladvak = { path = "../bladvak" }
 serde = { version = "1", features = ["derive"] }
 image = "0.25.9"

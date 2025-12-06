@@ -331,7 +331,10 @@ impl TarsierApp {
                 );
                 let inner = func(&cropped_img);
                 if let Err(e) = self.img.copy_from(&inner, selection.0, selection.1) {
-                    error_manager.add_error(AppError::new_with_source(Arc::new(e)));
+                    error_manager.add_error(AppError::new_with_source(
+                        "Cannot update selected image part",
+                        Arc::new(e),
+                    ));
                 }
                 self.updated_image();
             }
