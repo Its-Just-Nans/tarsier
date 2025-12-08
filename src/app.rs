@@ -9,10 +9,34 @@ use bladvak::{
     errors::{AppError, ErrorManager},
 };
 use bladvak::{egui_extras, log};
-use image::{DynamicImage, ImageReader};
+use image::{ColorType, DynamicImage, ImageReader};
 use std::{fmt::Debug, io::Cursor, path::PathBuf, sync::Arc};
 
 use crate::side_panel::{EditMode, ImageOperations};
+
+/// New Image settings
+#[derive(serde::Deserialize, serde::Serialize)]
+pub struct NewImage {
+    /// is open
+    pub(crate) is_open: bool,
+    /// new image width
+    pub(crate) width: u32,
+    /// new image heigth
+    pub(crate) heigth: u32,
+    /// new image color type
+    pub(crate) color_type: ColorType,
+}
+
+impl Default for NewImage {
+    fn default() -> Self {
+        Self {
+            is_open: false,
+            heigth: 400,
+            width: 400,
+            color_type: ColorType::Rgba16,
+        }
+    }
+}
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -49,9 +73,6 @@ pub struct TarsierApp {
     /// Selection as windows
     pub cursor_op_as_window: bool,
 
-    /// Operations as windows
-    pub operations_as_window: bool,
-
     /// Image infos as windows
     pub image_info_as_window: bool,
 
@@ -60,6 +81,10 @@ pub struct TarsierApp {
 
     /// Path to save the image
     pub save_path: Option<PathBuf>,
+
+    /// New image settings
+    #[serde(skip)]
+    pub new_image: NewImage,
 }
 
 impl Debug for TarsierApp {
@@ -84,10 +109,10 @@ impl Default for TarsierApp {
             cursor_op_as_window: false,
             start_selection: Pos2::ZERO,
             is_selecting: false,
-            operations_as_window: false,
             image_info_as_window: false,
             image_operations: Default::default(),
             save_path: None,
+            new_image: Default::default(),
         }
     }
 }
@@ -192,7 +217,7 @@ impl TarsierApp {
     }
 
     /// Update the image file
-    fn update_file(&mut self, new_img: DynamicImage, opt_cursor: Option<Cursor<&[u8]>>) {
+    pub(crate) fn update_file(&mut self, new_img: DynamicImage, opt_cursor: Option<Cursor<&[u8]>>) {
         self.saved_img = new_img.clone();
         self.update_image(new_img);
         let exifreader = exif::Reader::new();
@@ -228,7 +253,7 @@ impl BladvakApp for TarsierApp {
         ui.separator();
         ui.checkbox(&mut self.cursor_op_as_window, "Cursor windows");
         ui.checkbox(&mut self.image_info_as_window, "Image info windows");
-        ui.checkbox(&mut self.operations_as_window, "Operations windows");
+        ui.checkbox(&mut self.image_operations.is_window, "Operations windows");
         ui.separator();
         if ui.button("Default image").clicked() {
             let (img, cursor) = Self::load_default_image();
@@ -237,7 +262,7 @@ impl BladvakApp for TarsierApp {
     }
 
     fn is_side_panel(&self) -> bool {
-        !self.cursor_op_as_window || !self.image_info_as_window || !self.operations_as_window
+        !self.cursor_op_as_window || !self.image_info_as_window || !self.image_operations.is_window
     }
 
     fn is_open_button(&self) -> bool {
@@ -274,6 +299,10 @@ impl BladvakApp for TarsierApp {
 
     fn name() -> String {
         env!("CARGO_PKG_NAME").to_string()
+    }
+
+    fn version() -> String {
+        env!("CARGO_PKG_VERSION").to_string()
     }
 
     fn repo_url() -> String {

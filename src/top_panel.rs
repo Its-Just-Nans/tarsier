@@ -22,6 +22,10 @@ impl TarsierApp {
 
     /// Show the file menu
     pub(crate) fn app_menu_file(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
+        if ui.button("New").clicked() {
+            self.new_image.is_open = true;
+            ui.close();
+        };
         ui.menu_button("Save", |ui| {
             if ui.button("PNG").clicked() {
                 ui.close();

@@ -648,9 +648,9 @@ dependencies = [
 
 [[package]]
 name = "bladvak"
-version = "1.1.3"
+version = "1.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e247c2b2cdd9e333403800e859b4cf4b76b35bf036155de0436f194c01c04fc"
+checksum = "06e90ebf65adb96b8bccbf24506b923cf501b2b536711c856215356ad6947751"
 dependencies = [
  "eframe",
  "egui_extras",
@@ -1483,9 +1483,9 @@ checksum = "3a3076410a55c90011c298b04d0cfa770b00fa04e1e3c97d3f6c9de105a03844"
 
 [[package]]
 name = "flate2"
-version = "1.1.7"
+version = "1.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a2152dbcb980c05735e2a651d96011320a949eb31a0c8b38b72645ce97dec676"
+checksum = "bfe33edd8e85a12a67454e37f8c75e730830d83e313556ab9ebf9ee7fbeb3bfb"
 dependencies = [
  "crc32fast",
  "miniz_oxide",
@@ -1928,6 +1928,7 @@ dependencies = [
  "ravif",
  "rayon",
  "rgb",
+ "serde",
  "tiff",
  "zune-core 0.5.0",
  "zune-jpeg 0.5.5",
@@ -3749,7 +3750,7 @@ dependencies = [
 
 [[package]]
 name = "tarsier"
-version = "1.1.11"
+version = "1.2.0"
 dependencies = [
  "bladvak",
  "image",

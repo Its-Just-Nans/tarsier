@@ -1,8 +1,9 @@
 //! Central panel
 use bladvak::eframe::egui::{
-    self, ColorImage, Image, ImageData, Pos2, Sense, TextureOptions, Vec2,
+    self, ColorImage, Id, Image, ImageData, Modal, Pos2, Sense, TextureOptions, Vec2,
 };
 use bladvak::errors::ErrorManager;
+use image::DynamicImage;
 use std::sync::Arc;
 
 use crate::{side_panel::EditMode, TarsierApp};
@@ -163,13 +164,50 @@ impl TarsierApp {
         }
 
         {
-            let mut open = self.operations_as_window;
+            let mut open = self.image_operations.is_window;
             egui::Window::new("Operations")
                 .open(&mut open)
                 .show(ui.ctx(), |window_ui| {
                     self.image_operations(window_ui, error_manager);
                 });
-            self.operations_as_window = open;
+            self.image_operations.is_window = open;
+        }
+        if self.new_image.is_open {
+            let modal = Modal::new(Id::new("Modal new image")).show(ui.ctx(), |ui| {
+                ui.label("Create a new image");
+                ui.horizontal(|ui| {
+                    ui.label("Width");
+                    ui.add(egui::DragValue::new(&mut self.new_image.width).range(1..=4000));
+                });
+                ui.horizontal(|ui| {
+                    ui.label("Height");
+                    ui.add(egui::DragValue::new(&mut self.new_image.heigth).range(1..=4000));
+                });
+                ui.label("Color type");
+                Self::combo_box_color_type(ui, &mut self.new_image.color_type);
+                egui::Sides::new().show(
+                    ui,
+                    |modal_ui| {
+                        if modal_ui.button("Cancel").clicked() {
+                            modal_ui.close();
+                        }
+                    },
+                    |modal_ui| {
+                        if modal_ui.button("Create").clicked() {
+                            let new_img = DynamicImage::new(
+                                self.new_image.width,
+                                self.new_image.heigth,
+                                self.new_image.color_type,
+                            );
+                            self.update_file(new_img, None);
+                            modal_ui.close();
+                        }
+                    },
+                );
+            });
+            if modal.should_close() {
+                self.new_image.is_open = false;
+            }
         }
     }
 }

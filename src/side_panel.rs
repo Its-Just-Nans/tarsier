@@ -43,6 +43,8 @@ impl Default for Others {
 /// Image opterations settings
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct ImageOperations {
+    /// is window
+    pub is_window: bool,
     /// Blur value
     pub blur: f32,
     /// Hue rotation value
@@ -67,6 +69,7 @@ pub struct ImageOperations {
 impl Default for ImageOperations {
     fn default() -> Self {
         Self {
+            is_window: false,
             blur: 10.0,
             hue_rotation: 50,
             brighten: 50,
@@ -89,7 +92,7 @@ impl TarsierApp {
             self.image_info(ui);
             ui.separator();
         }
-        if !self.operations_as_window {
+        if !self.image_operations.is_window {
             self.image_operations(ui, error_manager);
             ui.separator();
         }
@@ -149,62 +152,35 @@ impl TarsierApp {
         };
     }
 
+    /// Combo box for color type selection
+    pub(crate) fn combo_box_color_type(ui: &mut egui::Ui, value: &mut ColorType) {
+        egui::ComboBox::from_id_salt("convert_box")
+            .selected_text(format!("{value:?}"))
+            .show_ui(ui, |ui| {
+                ui.selectable_value(value, ColorType::L8, format!("{:?}", ColorType::L8));
+                ui.selectable_value(value, ColorType::L16, format!("{:?}", ColorType::L16));
+                ui.selectable_value(value, ColorType::La8, format!("{:?}", ColorType::La8));
+                ui.selectable_value(value, ColorType::La16, format!("{:?}", ColorType::La16));
+                ui.selectable_value(value, ColorType::Rgb8, format!("{:?}", ColorType::Rgb8));
+                ui.selectable_value(value, ColorType::Rgb16, format!("{:?}", ColorType::Rgb16));
+                ui.selectable_value(value, ColorType::Rgb32F, format!("{:?}", ColorType::Rgb32F));
+                ui.selectable_value(value, ColorType::Rgba8, format!("{:?}", ColorType::Rgba8));
+                ui.selectable_value(value, ColorType::Rgba16, format!("{:?}", ColorType::Rgba16));
+                ui.selectable_value(
+                    value,
+                    ColorType::Rgba32F,
+                    format!("{:?}", ColorType::Rgba32F),
+                );
+            });
+    }
+
     /// Side panel content
     pub(crate) fn image_operations(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
         ui.label("Convert");
         egui::ComboBox::from_id_salt("convert_box")
             .selected_text(format!("{:?}", self.image_operations.other.convert_to))
             .show_ui(ui, |ui| {
-                ui.selectable_value(
-                    &mut self.image_operations.other.convert_to,
-                    ColorType::L8,
-                    format!("{:?}", ColorType::L8),
-                );
-                ui.selectable_value(
-                    &mut self.image_operations.other.convert_to,
-                    ColorType::L16,
-                    format!("{:?}", ColorType::L16),
-                );
-                ui.selectable_value(
-                    &mut self.image_operations.other.convert_to,
-                    ColorType::La8,
-                    format!("{:?}", ColorType::La8),
-                );
-                ui.selectable_value(
-                    &mut self.image_operations.other.convert_to,
-                    ColorType::La16,
-                    format!("{:?}", ColorType::La16),
-                );
-                ui.selectable_value(
-                    &mut self.image_operations.other.convert_to,
-                    ColorType::Rgb8,
-                    format!("{:?}", ColorType::Rgb8),
-                );
-                ui.selectable_value(
-                    &mut self.image_operations.other.convert_to,
-                    ColorType::Rgb16,
-                    format!("{:?}", ColorType::Rgb16),
-                );
-                ui.selectable_value(
-                    &mut self.image_operations.other.convert_to,
-                    ColorType::Rgb32F,
-                    format!("{:?}", ColorType::Rgb32F),
-                );
-                ui.selectable_value(
-                    &mut self.image_operations.other.convert_to,
-                    ColorType::Rgba8,
-                    format!("{:?}", ColorType::Rgba8),
-                );
-                ui.selectable_value(
-                    &mut self.image_operations.other.convert_to,
-                    ColorType::Rgba16,
-                    format!("{:?}", ColorType::Rgba16),
-                );
-                ui.selectable_value(
-                    &mut self.image_operations.other.convert_to,
-                    ColorType::Rgba32F,
-                    format!("{:?}", ColorType::Rgba32F),
-                );
+                Self::combo_box_color_type(ui, &mut self.image_operations.other.convert_to);
             });
         if ui.button("Convert").clicked() {
             let new_img = match self.image_operations.other.convert_to {
