@@ -21,8 +21,8 @@ pub struct NewImage {
     pub(crate) is_open: bool,
     /// new image width
     pub(crate) width: u32,
-    /// new image heigth
-    pub(crate) heigth: u32,
+    /// new image height
+    pub(crate) height: u32,
     /// new image color type
     pub(crate) color_type: ColorType,
 }
@@ -31,7 +31,7 @@ impl Default for NewImage {
     fn default() -> Self {
         Self {
             is_open: false,
-            heigth: 400,
+            height: 400,
             width: 400,
             color_type: ColorType::Rgba16,
         }

@@ -181,7 +181,7 @@ impl TarsierApp {
                 });
                 ui.horizontal(|ui| {
                     ui.label("Height");
-                    ui.add(egui::DragValue::new(&mut self.new_image.heigth).range(1..=4000));
+                    ui.add(egui::DragValue::new(&mut self.new_image.height).range(1..=4000));
                 });
                 ui.label("Color type");
                 Self::combo_box_color_type(ui, &mut self.new_image.color_type);
@@ -196,7 +196,7 @@ impl TarsierApp {
                         if modal_ui.button("Create").clicked() {
                             let new_img = DynamicImage::new(
                                 self.new_image.width,
-                                self.new_image.heigth,
+                                self.new_image.height,
                                 self.new_image.color_type,
                             );
                             self.update_file(new_img, None);
