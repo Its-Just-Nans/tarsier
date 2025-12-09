@@ -61,7 +61,7 @@ pub struct ImageOperations {
     pub mode: EditMode,
     /// Drawing mode
     pub drawing_blend: bool,
-    /// Continous line when drawing when dragged
+    /// Continuous line when drawing when dragged
     pub drawing_continuous_line: bool,
     /// Others settings
     #[serde(skip)]
@@ -341,7 +341,7 @@ impl TarsierApp {
         ui.checkbox(&mut self.image_operations.drawing_blend, "Blend");
         ui.checkbox(
             &mut self.image_operations.drawing_continuous_line,
-            "Continous line",
+            "Continuous line",
         );
     }
 
