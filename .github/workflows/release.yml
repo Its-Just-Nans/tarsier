@@ -113,9 +113,9 @@ jobs:
               uses: dtolnay/rust-toolchain@stable
               with:
                   targets: ${{ matrix.job.target }}
-                  # On windows, for now build with 1.88.2, so that it works on windows 7.
+                  # On windows, for now build with correct version, so that it works on windows 7.
                   # When we update the MSRV again, we'll need to revisit this, and probably drop support for Win7
-                  toolchain: "${{ contains(matrix.job.target, 'windows-') && '1.88.0' || 'stable' }}"
+                  toolchain: "${{ contains(matrix.job.target, 'windows-') && '1.91.0' || 'stable' }}"
 
             - name: Install cross
               if: matrix.job.use-cross
