@@ -6,7 +6,7 @@ use bladvak::errors::ErrorManager;
 use image::DynamicImage;
 use std::sync::Arc;
 
-use crate::{side_panel::EditMode, TarsierApp};
+use crate::{TarsierApp, side_panel::EditMode};
 
 impl TarsierApp {
     /// Show the central panel
@@ -38,8 +38,8 @@ impl TarsierApp {
             let painter = ui.painter();
             if response.dragged() {
                 if let Some(pos) = response.interact_pointer_pos() {
-                    if !self.is_selecting {
-                        self.selection = None;
+                    if !self.cursor_info.is_selecting {
+                        self.cursor_info.selection = None;
                     }
                     let pos = pos - Vec2::new(ecart_x - viewport.min.x, ecart_y - viewport.min.y);
                     let correct_pos = Pos2::new(
@@ -48,31 +48,42 @@ impl TarsierApp {
                     );
                     match self.image_operations.mode {
                         EditMode::Selection => {
-                            self.selection = match self.selection {
+                            self.cursor_info.selection = match self.cursor_info.selection {
                                 Some(_rect) => Some(egui::Rect::from_two_pos(
-                                    self.start_selection,
+                                    self.cursor_info.start_selection,
                                     correct_pos,
                                 )),
                                 None => {
-                                    self.start_selection = correct_pos;
+                                    self.cursor_info.start_selection = correct_pos;
                                     Some(egui::Rect::from_two_pos(correct_pos, correct_pos))
                                 }
                             };
-                            self.is_selecting = true;
+                            self.cursor_info.is_selecting = true;
                         }
                         EditMode::Drawing => {
-                            self.draw_point(correct_pos.x as i32, correct_pos.y as i32);
+                            if self.image_operations.drawing_continuous_line
+                                && let Some(last_post) = self.cursor_info.last_drawing_point
+                            {
+                                let pts = points_between(last_post, correct_pos);
+                                for p in pts {
+                                    self.draw_point(p.x as i32, p.y as i32);
+                                }
+                            } else {
+                                self.draw_point(correct_pos.x as i32, correct_pos.y as i32);
+                            }
+                            self.cursor_info.last_drawing_point = Some(correct_pos);
                         }
                     }
                 }
             } else {
-                self.is_selecting = false;
+                self.cursor_info.is_selecting = false;
+                self.cursor_info.last_drawing_point = None;
             }
             if response.clicked() {
-                self.selection = None;
+                self.cursor_info.selection = None;
                 match self.image_operations.mode {
                     EditMode::Selection => {
-                        self.selection = None;
+                        self.cursor_info.selection = None;
                     }
                     EditMode::Drawing => {
                         if let Some(pos) = response.interact_pointer_pos() {
@@ -83,11 +94,12 @@ impl TarsierApp {
                                 pos.y.round().clamp(0.0, size[1] as f32),
                             );
                             self.draw_point(correct_pos.x as i32, correct_pos.y as i32);
+                            self.cursor_info.last_drawing_point = None;
                         }
                     }
                 }
             }
-            if let Some(selection) = self.selection {
+            if let Some(selection) = self.cursor_info.selection {
                 let min_pos = img_position.min;
                 let rect_selection = egui::Rect::from_two_pos(
                     Pos2::new(
@@ -144,13 +156,13 @@ impl TarsierApp {
             }
         });
         {
-            let mut open = self.cursor_op_as_window;
+            let mut open = self.cursor_info.cursor_op_as_window;
             egui::Window::new("Cursor operations")
                 .open(&mut open)
                 .show(ui.ctx(), |window_ui| {
                     self.cursor_ui(window_ui);
                 });
-            self.cursor_op_as_window = open;
+            self.cursor_info.cursor_op_as_window = open;
         }
 
         {
@@ -210,4 +222,39 @@ impl TarsierApp {
             }
         }
     }
+}
+
+/// Calculate all points between two points
+fn points_between(a: Pos2, b: Pos2) -> Vec<Pos2> {
+    let mut points = Vec::new();
+
+    let (mut x1, mut y1) = (a.x, a.y);
+    let (x2, y2) = (b.x, b.y);
+
+    let dx = (x2 - x1).abs();
+    let dy = -(y2 - y1).abs();
+    let sx = if x1 < x2 { 1.0 } else { -1.0 };
+    let sy = if y1 < y2 { 1.0 } else { -1.0 };
+    let mut err = dx + dy;
+
+    loop {
+        points.push(Pos2 { x: x1, y: y1 });
+
+        if x1 == x2 && y1 == y2 {
+            break;
+        }
+
+        let e2 = 2.0 * err;
+
+        if e2 >= dy {
+            err += dy;
+            x1 += sx;
+        }
+        if e2 <= dx {
+            err += dx;
+            y1 += sy;
+        }
+    }
+
+    points
 }

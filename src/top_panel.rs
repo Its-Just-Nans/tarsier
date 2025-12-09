@@ -217,11 +217,11 @@ impl TarsierApp {
             if self.image_operations.mode != previous_state {
                 ui.close();
                 if self.image_operations.mode == EditMode::Drawing {
-                    self.selection = None;
+                    self.cursor_info.selection = None;
                 }
             }
         });
-        if let Some(selection) = self.selection {
+        if let Some(selection) = self.cursor_info.selection {
             ui.separator();
             if ui
                 .label(format!(
@@ -232,7 +232,7 @@ impl TarsierApp {
                 .on_hover_text("Click to clear selection")
                 .clicked()
             {
-                self.selection = None;
+                self.cursor_info.selection = None;
             }
         }
         ui.separator();

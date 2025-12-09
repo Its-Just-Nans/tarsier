@@ -1,8 +1,7 @@
 //! Tarsier App
 use bladvak::eframe::{
-    self,
+    self, CreationContext,
     egui::{self, Color32, Image, ImageSource, Pos2},
-    CreationContext,
 };
 use bladvak::{
     app::BladvakApp,
@@ -38,6 +37,41 @@ impl Default for NewImage {
     }
 }
 
+/// Cursor state
+#[derive(serde::Deserialize, serde::Serialize)]
+pub struct CursorState {
+    /// Selection rectangle
+    #[serde(skip)]
+    pub selection: Option<egui::Rect>,
+
+    /// Start selection position
+    #[serde(skip)]
+    pub start_selection: Pos2,
+
+    /// Start selection position
+    #[serde(skip)]
+    pub last_drawing_point: Option<Pos2>,
+
+    /// Is currently selecting
+    #[serde(skip)]
+    pub is_selecting: bool,
+
+    /// Selection as windows
+    pub cursor_op_as_window: bool,
+}
+
+impl Default for CursorState {
+    fn default() -> Self {
+        Self {
+            selection: None,
+            cursor_op_as_window: false,
+            start_selection: Pos2::ZERO,
+            last_drawing_point: None,
+            is_selecting: false,
+        }
+    }
+}
+
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)]
@@ -58,20 +92,8 @@ pub struct TarsierApp {
     #[serde(skip)]
     pub exif: Option<exif::Exif>,
 
-    /// Selection rectangle
-    #[serde(skip)]
-    pub selection: Option<egui::Rect>,
-
-    /// Start selection position
-    #[serde(skip)]
-    pub start_selection: Pos2,
-
-    /// Is currently selecting
-    #[serde(skip)]
-    pub is_selecting: bool,
-
-    /// Selection as windows
-    pub cursor_op_as_window: bool,
+    /// Cursor state
+    pub cursor_info: CursorState,
 
     /// Image infos as windows
     pub image_info_as_window: bool,
@@ -105,10 +127,7 @@ impl Default for TarsierApp {
             img,
             texture: None,
             exif: None,
-            selection: None,
-            cursor_op_as_window: false,
-            start_selection: Pos2::ZERO,
-            is_selecting: false,
+            cursor_info: Default::default(),
             image_info_as_window: false,
             image_operations: Default::default(),
             save_path: None,
@@ -176,7 +195,7 @@ impl TarsierApp {
         if self.image_operations.mode == EditMode::Drawing {
             self.button_drawing(ui);
         } else {
-            match self.selection {
+            match self.cursor_info.selection {
                 Some(rect) => {
                     let width = rect.width().abs() as u32;
                     let height = rect.height().abs() as u32;
@@ -189,7 +208,7 @@ impl TarsierApp {
                     ui.label("No selection");
                 }
             }
-            if let Some(selection) = self.selection {
+            if let Some(selection) = self.cursor_info.selection {
                 let icon_image = Image::new(Self::CROP_ICON);
                 let icon = if ui.ctx().style().visuals.dark_mode {
                     icon_image
@@ -244,14 +263,14 @@ impl TarsierApp {
     /// Post update image
     pub(crate) fn updated_image(&mut self) {
         self.texture = None;
-        self.selection = None;
+        self.cursor_info.selection = None;
     }
 }
 
 impl BladvakApp for TarsierApp {
     fn settings(&mut self, ui: &mut egui::Ui, _error_manager: &mut ErrorManager) {
         ui.separator();
-        ui.checkbox(&mut self.cursor_op_as_window, "Cursor windows");
+        ui.checkbox(&mut self.cursor_info.cursor_op_as_window, "Cursor windows");
         ui.checkbox(&mut self.image_info_as_window, "Image info windows");
         ui.checkbox(&mut self.image_operations.is_window, "Operations windows");
         ui.separator();
@@ -262,7 +281,9 @@ impl BladvakApp for TarsierApp {
     }
 
     fn is_side_panel(&self) -> bool {
-        !self.cursor_op_as_window || !self.image_info_as_window || !self.image_operations.is_window
+        !self.cursor_info.cursor_op_as_window
+            || !self.image_info_as_window
+            || !self.image_operations.is_window
     }
 
     fn is_open_button(&self) -> bool {
@@ -277,7 +298,7 @@ impl BladvakApp for TarsierApp {
                 return Err(AppError::new_with_source(
                     "Cannot decode image",
                     Arc::new(e),
-                ))
+                ));
             }
         };
         let cursor = Cursor::new(bytes);

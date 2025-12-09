@@ -61,6 +61,8 @@ pub struct ImageOperations {
     pub mode: EditMode,
     /// Drawing mode
     pub drawing_blend: bool,
+    /// Continous line when drawing when dragged
+    pub drawing_continuous_line: bool,
     /// Others settings
     #[serde(skip)]
     pub other: Others,
@@ -78,6 +80,7 @@ impl Default for ImageOperations {
             pen_color: [0, 0, 0, 255],
             mode: EditMode::Selection,
             drawing_blend: false,
+            drawing_continuous_line: true,
             other: Others {
                 convert_to: ColorType::Rgba8,
             },
@@ -96,7 +99,7 @@ impl TarsierApp {
             self.image_operations(ui, error_manager);
             ui.separator();
         }
-        if !self.cursor_op_as_window {
+        if !self.cursor_info.cursor_op_as_window {
             self.cursor_ui(ui);
         }
     }
@@ -289,7 +292,7 @@ impl TarsierApp {
     where
         F: Fn(&DynamicImage) -> DynamicImage,
     {
-        let current_selection = self.selection.map(|selection| {
+        let current_selection = self.cursor_info.selection.map(|selection| {
             (
                 selection.min.x as u32,
                 selection.min.y as u32,
@@ -336,6 +339,10 @@ impl TarsierApp {
         );
         self.image_operations.pen_color = [color.r(), color.g(), color.b(), color.a()];
         ui.checkbox(&mut self.image_operations.drawing_blend, "Blend");
+        ui.checkbox(
+            &mut self.image_operations.drawing_continuous_line,
+            "Continous line",
+        );
     }
 
     /// Button to show the outline
