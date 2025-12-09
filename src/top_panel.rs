@@ -1,12 +1,12 @@
 //! Top panel
 use bladvak::eframe::egui::{
-    self, include_image, text::LayoutJob, Color32, ColorImage, Image, ImageSource, TextFormat,
+    self, Color32, ColorImage, Image, ImageSource, TextFormat, include_image, text::LayoutJob,
 };
 use bladvak::errors::ErrorManager;
 use image::ImageFormat;
 use std::{io::Cursor, path::PathBuf};
 
-use crate::{side_panel::EditMode, TarsierApp};
+use crate::{TarsierApp, side_panel::EditMode};
 
 impl TarsierApp {
     /// Reset icon
@@ -36,10 +36,10 @@ impl TarsierApp {
                 match save_path {
                     Ok(save_p) => {
                         self.save_path = save_p.clone();
-                        if let Some(path_to_save) = save_p {
-                            if let Err(err) = self.save_image(ImageFormat::Png, &path_to_save) {
-                                error_manager.add_error(err);
-                            }
+                        if let Some(path_to_save) = save_p
+                            && let Err(err) = self.save_image(ImageFormat::Png, &path_to_save)
+                        {
+                            error_manager.add_error(err);
                         }
                     }
                     Err(e) => {
@@ -56,10 +56,10 @@ impl TarsierApp {
                 match save_path {
                     Ok(save_p) => {
                         self.save_path = save_p.clone();
-                        if let Some(path_to_save) = save_p {
-                            if let Err(err) = self.save_image(ImageFormat::Jpeg, &path_to_save) {
-                                error_manager.add_error(err);
-                            }
+                        if let Some(path_to_save) = save_p
+                            && let Err(err) = self.save_image(ImageFormat::Jpeg, &path_to_save)
+                        {
+                            error_manager.add_error(err);
                         }
                     }
                     Err(e) => {
@@ -76,10 +76,10 @@ impl TarsierApp {
                 match save_path {
                     Ok(save_p) => {
                         self.save_path = save_p.clone();
-                        if let Some(path_to_save) = save_p {
-                            if let Err(err) = self.save_image(ImageFormat::Bmp, &path_to_save) {
-                                error_manager.add_error(err);
-                            }
+                        if let Some(path_to_save) = save_p
+                            && let Err(err) = self.save_image(ImageFormat::Bmp, &path_to_save)
+                        {
+                            error_manager.add_error(err);
                         }
                     }
                     Err(e) => {
@@ -96,10 +96,10 @@ impl TarsierApp {
                 match save_path {
                     Ok(save_p) => {
                         self.save_path = save_p.clone();
-                        if let Some(path_to_save) = save_p {
-                            if let Err(err) = self.save_image(ImageFormat::Gif, &path_to_save) {
-                                error_manager.add_error(err);
-                            }
+                        if let Some(path_to_save) = save_p
+                            && let Err(err) = self.save_image(ImageFormat::Gif, &path_to_save)
+                        {
+                            error_manager.add_error(err);
                         }
                     }
                     Err(e) => {
