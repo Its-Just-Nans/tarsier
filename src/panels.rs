@@ -3,7 +3,7 @@ use bladvak::{app::BladvakPanel, eframe::egui};
 
 use crate::TarsierApp;
 
-/// Panel fo image operations
+/// Panel for image operations
 #[derive(Debug)]
 pub(crate) struct ImageOperationsPanel;
 
@@ -40,7 +40,7 @@ impl BladvakPanel for ImageOperationsPanel {
     }
 }
 
-/// Panel fo image informations
+/// Panel for image information
 #[derive(Debug)]
 pub(crate) struct ImageInfo;
 
@@ -81,7 +81,7 @@ impl BladvakPanel for ImageInfo {
     }
 }
 
-/// Panel fo cursor operations
+/// Panel for cursor operations
 #[derive(Debug)]
 pub(crate) struct CursorInfo;
 
