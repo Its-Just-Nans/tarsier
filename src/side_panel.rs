@@ -27,6 +27,7 @@ impl Display for EditMode {
 }
 
 /// Image settings
+#[derive(Debug)]
 pub struct Others {
     /// Convert to color
     pub convert_to: ColorType,
@@ -41,10 +42,8 @@ impl Default for Others {
 }
 
 /// Image opterations settings
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct ImageOperations {
-    /// is window
-    pub is_window: bool,
     /// Blur value
     pub blur: f32,
     /// Hue rotation value
@@ -71,7 +70,6 @@ pub struct ImageOperations {
 impl Default for ImageOperations {
     fn default() -> Self {
         Self {
-            is_window: false,
             blur: 10.0,
             hue_rotation: 50,
             brighten: 50,
@@ -89,21 +87,6 @@ impl Default for ImageOperations {
 }
 
 impl TarsierApp {
-    /// Side panel
-    pub(crate) fn app_side_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
-        if !self.image_info_as_window {
-            self.image_info(ui);
-            ui.separator();
-        }
-        if !self.image_operations.is_window {
-            self.image_operations(ui, error_manager);
-            ui.separator();
-        }
-        if !self.cursor_info.cursor_op_as_window {
-            self.cursor_ui(ui);
-        }
-    }
-
     /// Image info
     pub(crate) fn image_info(&mut self, ui: &mut egui::Ui) {
         ui.heading("Image Info");

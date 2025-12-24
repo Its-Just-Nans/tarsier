@@ -13,7 +13,7 @@ impl TarsierApp {
     pub(crate) fn app_central_panel(
         &mut self,
         ui: &mut egui::Ui,
-        error_manager: &mut ErrorManager,
+        _error_manager: &mut ErrorManager,
     ) {
         egui::ScrollArea::both().show_viewport(ui, |ui, viewport| {
             let size = [self.img.width() as _, self.img.height() as _];
@@ -155,35 +155,7 @@ impl TarsierApp {
                 );
             }
         });
-        {
-            let mut open = self.cursor_info.cursor_op_as_window;
-            egui::Window::new("Cursor operations")
-                .open(&mut open)
-                .show(ui.ctx(), |window_ui| {
-                    self.cursor_ui(window_ui);
-                });
-            self.cursor_info.cursor_op_as_window = open;
-        }
 
-        {
-            let mut open = self.image_info_as_window;
-            egui::Window::new("Image info")
-                .open(&mut open)
-                .show(ui.ctx(), |window_ui| {
-                    self.image_info(window_ui);
-                });
-            self.image_info_as_window = open;
-        }
-
-        {
-            let mut open = self.image_operations.is_window;
-            egui::Window::new("Operations")
-                .open(&mut open)
-                .show(ui.ctx(), |window_ui| {
-                    self.image_operations(window_ui, error_manager);
-                });
-            self.image_operations.is_window = open;
-        }
         if self.new_image.is_open {
             let modal = Modal::new(Id::new("Modal new image")).show(ui.ctx(), |ui| {
                 ui.label("Create a new image");

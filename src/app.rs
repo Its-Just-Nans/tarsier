@@ -1,17 +1,24 @@
 //! Tarsier App
-use bladvak::eframe::{
-    self, CreationContext,
-    egui::{self, Color32, Image, ImageSource, Pos2},
-};
 use bladvak::{
+    File,
     app::BladvakApp,
     errors::{AppError, ErrorManager},
+};
+use bladvak::{
+    eframe::{
+        self, CreationContext,
+        egui::{self, Color32, Image, ImageSource, Pos2},
+    },
+    utils::is_native,
 };
 use bladvak::{egui_extras, log};
 use image::{ColorType, DynamicImage, ImageReader};
 use std::{fmt::Debug, io::Cursor, path::PathBuf, sync::Arc};
 
-use crate::side_panel::{EditMode, ImageOperations};
+use crate::{
+    panels::{CursorInfo, ImageInfo, ImageOperationsPanel},
+    side_panel::{EditMode, ImageOperations},
+};
 
 /// New Image settings
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -138,44 +145,15 @@ impl Default for TarsierApp {
 
 impl TarsierApp {
     /// Called once before the first frame.
-    fn new_app(cc: &eframe::CreationContext<'_>) -> Self {
+    fn new_app(saved_state: Self, cc: &eframe::CreationContext<'_>) -> Self {
         // This is also where you can customize the look and feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
         egui_extras::install_image_loaders(&cc.egui_ctx);
-        bladvak::utils::get_saved_app_state::<Self>(cc)
-    }
-    /// Create a new Tarsier App with an image
-    /// # Errors
-    /// Return error if fail to load image
-    pub fn new_app_with_args(cc: &CreationContext<'_>, args: &[String]) -> Result<Self, AppError> {
-        if args.len() > 1 {
-            use image::ImageReader;
-            let path = &args[1];
-            let bytes = std::fs::read(path)?;
-            let cursor: Cursor<&[u8]> = Cursor::new(bytes.as_ref());
-            let img_reader = ImageReader::new(cursor);
-            match img_reader.with_guessed_format()?.decode() {
-                Ok(img) => {
-                    let mut app = Self::new_app(cc);
-                    let cursor_data = Cursor::new(bytes.as_ref());
-                    app.update_file(img, Some(cursor_data));
-                    Ok(app)
-                }
-                Err(e) => {
-                    eprintln!("Failed to load image '{path}': {e}");
-                    Err(AppError::new_with_source(
-                        format!("Failed to load image '{path}'"),
-                        Arc::new(e),
-                    ))
-                }
-            }
-        } else {
-            Ok(TarsierApp::new_app(cc))
-        }
+        saved_state
     }
 
     /// Load the default image
-    fn load_default_image() -> (DynamicImage, Cursor<&'static [u8]>) {
+    pub(crate) fn load_default_image() -> (DynamicImage, Cursor<&'static [u8]>) {
         let cursor = Cursor::new(ASSET);
         // allow unwrap_used since asset is static
         #[allow(clippy::unwrap_used)]
@@ -267,31 +245,33 @@ impl TarsierApp {
     }
 }
 
-impl BladvakApp for TarsierApp {
-    fn settings(&mut self, ui: &mut egui::Ui, _error_manager: &mut ErrorManager) {
-        ui.separator();
-        ui.checkbox(&mut self.cursor_info.cursor_op_as_window, "Cursor windows");
-        ui.checkbox(&mut self.image_info_as_window, "Image info windows");
-        ui.checkbox(&mut self.image_operations.is_window, "Operations windows");
-        ui.separator();
-        if ui.button("Default image").clicked() {
-            let (img, cursor) = Self::load_default_image();
-            self.update_file(img, Some(cursor));
-        }
+impl BladvakApp<'_> for TarsierApp {
+    fn side_panel(
+        &mut self,
+        ui: &mut egui::Ui,
+        func_ui: impl FnOnce(&mut egui::Ui, &mut TarsierApp),
+    ) {
+        egui::Frame::central_panel(&ui.ctx().style()).show(ui, |panel_ui| func_ui(panel_ui, self));
+    }
+
+    fn panel_list(&self) -> Vec<Box<dyn bladvak::app::BladvakPanel<App = Self>>> {
+        vec![
+            Box::new(ImageInfo),
+            Box::new(ImageOperationsPanel),
+            Box::new(CursorInfo),
+        ]
     }
 
     fn is_side_panel(&self) -> bool {
-        !self.cursor_info.cursor_op_as_window
-            || !self.image_info_as_window
-            || !self.image_operations.is_window
+        true
     }
 
     fn is_open_button(&self) -> bool {
         true
     }
 
-    fn handle_file(&mut self, bytes: &[u8]) -> Result<(), AppError> {
-        let img_reader = ImageReader::new(Cursor::new(bytes)).with_guessed_format()?;
+    fn handle_file(&mut self, file: File) -> Result<(), AppError> {
+        let img_reader = ImageReader::new(Cursor::new(&file.data)).with_guessed_format()?;
         let img = match img_reader.decode() {
             Ok(img) => img,
             Err(e) => {
@@ -301,7 +281,7 @@ impl BladvakApp for TarsierApp {
                 ));
             }
         };
-        let cursor = Cursor::new(bytes);
+        let cursor = Cursor::new(file.data.as_ref());
         self.update_file(img, Some(cursor));
         Ok(())
     }
@@ -330,18 +310,38 @@ impl BladvakApp for TarsierApp {
         "https://github.com/Its-Just-Nans/tarsier".to_string()
     }
 
-    fn side_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
-        egui::Frame::central_panel(&ui.ctx().style()).show(ui, |parent_ui| {
-            self.app_side_panel(parent_ui, error_manager)
-        });
+    fn icon() -> &'static [u8] {
+        &include_bytes!("../assets/icon-256.png")[..]
     }
 
-    fn new(cc: &eframe::CreationContext<'_>) -> Result<Self, AppError> {
-        Ok(TarsierApp::new_app(cc))
-    }
-
-    #[cfg(not(target_arch = "wasm32"))]
-    fn new_with_args(cc: &CreationContext<'_>, args: &[String]) -> Result<Self, AppError> {
-        TarsierApp::new_app_with_args(cc, args)
+    fn try_new_with_args(
+        saved_state: Self,
+        cc: &CreationContext<'_>,
+        args: &[String],
+    ) -> Result<Self, AppError> {
+        if is_native() && args.len() > 1 {
+            use image::ImageReader;
+            let path = &args[1];
+            let bytes = std::fs::read(path)?;
+            let cursor: Cursor<&[u8]> = Cursor::new(bytes.as_ref());
+            let img_reader = ImageReader::new(cursor);
+            match img_reader.with_guessed_format()?.decode() {
+                Ok(img) => {
+                    let mut app = Self::new_app(saved_state, cc);
+                    let cursor_data = Cursor::new(bytes.as_ref());
+                    app.update_file(img, Some(cursor_data));
+                    Ok(app)
+                }
+                Err(e) => {
+                    eprintln!("Failed to load image '{path}': {e}");
+                    Err(AppError::new_with_source(
+                        format!("Failed to load image '{path}'"),
+                        Arc::new(e),
+                    ))
+                }
+            }
+        } else {
+            Ok(TarsierApp::new_app(saved_state, cc))
+        }
     }
 }

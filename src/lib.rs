@@ -15,6 +15,7 @@
 
 mod app;
 mod central_panel;
+mod panels;
 mod side_panel;
 mod top_panel;
 
