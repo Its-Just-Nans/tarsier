@@ -10,6 +10,8 @@ use crate::{TarsierApp, side_panel::EditMode};
 
 impl TarsierApp {
     /// Show the central panel
+    #[allow(clippy::too_many_lines)]
+    #[allow(clippy::cast_precision_loss)]
     pub(crate) fn app_central_panel(
         &mut self,
         ui: &mut egui::Ui,
@@ -48,19 +50,20 @@ impl TarsierApp {
                     );
                     match self.image_operations.mode {
                         EditMode::Selection => {
-                            self.cursor_info.selection = match self.cursor_info.selection {
-                                Some(_rect) => Some(egui::Rect::from_two_pos(
-                                    self.cursor_info.start_selection,
-                                    correct_pos,
-                                )),
-                                None => {
+                            self.cursor_info.selection =
+                                if let Some(_rect) = self.cursor_info.selection {
+                                    Some(egui::Rect::from_two_pos(
+                                        self.cursor_info.start_selection,
+                                        correct_pos,
+                                    ))
+                                } else {
                                     self.cursor_info.start_selection = correct_pos;
                                     Some(egui::Rect::from_two_pos(correct_pos, correct_pos))
-                                }
-                            };
+                                };
                             self.cursor_info.is_selecting = true;
                         }
                         EditMode::Drawing => {
+                            #[allow(clippy::cast_possible_truncation)]
                             if self.image_operations.drawing_continuous_line
                                 && let Some(last_post) = self.cursor_info.last_drawing_point
                             {
@@ -93,6 +96,7 @@ impl TarsierApp {
                                 pos.x.round().clamp(0.0, size[0] as f32),
                                 pos.y.round().clamp(0.0, size[1] as f32),
                             );
+                            #[allow(clippy::cast_possible_truncation)]
                             self.draw_point(correct_pos.x as i32, correct_pos.y as i32);
                             self.cursor_info.last_drawing_point = None;
                         }
@@ -209,10 +213,11 @@ fn points_between(a: Pos2, b: Pos2) -> Vec<Pos2> {
     let sy = if y1 < y2 { 1.0 } else { -1.0 };
     let mut err = dx + dy;
 
+    let error_margin = 0.01;
     loop {
         points.push(Pos2 { x: x1, y: y1 });
 
-        if x1 == x2 && y1 == y2 {
+        if (x1 - x2).abs() < error_margin && (y1 - y2).abs() < error_margin {
             break;
         }
 

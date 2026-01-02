@@ -10,7 +10,7 @@ pub(crate) struct ImageOperationsPanel;
 impl BladvakPanel for ImageOperationsPanel {
     type App = TarsierApp;
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "Image operations"
     }
 
@@ -47,7 +47,7 @@ pub(crate) struct ImageInfo;
 impl BladvakPanel for ImageInfo {
     type App = TarsierApp;
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "Image infos"
     }
 
@@ -102,7 +102,7 @@ impl BladvakPanel for CursorInfo {
     fn has_ui(&self) -> bool {
         true
     }
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "Cursor operations"
     }
 

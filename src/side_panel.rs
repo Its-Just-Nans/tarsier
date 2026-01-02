@@ -135,7 +135,7 @@ impl TarsierApp {
             None => {
                 ui.label("No exif detected");
             }
-        };
+        }
     }
 
     /// Combo box for color type selection
@@ -160,8 +160,8 @@ impl TarsierApp {
             });
     }
 
-    /// Side panel content
-    pub(crate) fn image_operations(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
+    /// Button for convert
+    fn button_convert(&mut self, ui: &mut egui::Ui) {
         ui.label("Convert");
         egui::ComboBox::from_id_salt("convert_box")
             .selected_text(format!("{:?}", self.image_operations.other.convert_to))
@@ -177,13 +177,17 @@ impl TarsierApp {
                 ColorType::Rgb8 => self.img.to_rgb8().into(),
                 ColorType::Rgb16 => self.img.to_rgb16().into(),
                 ColorType::Rgb32F => self.img.to_rgb32f().into(),
-                ColorType::Rgba8 => self.img.to_rgba8().into(),
                 ColorType::Rgba16 => self.img.to_rgba16().into(),
                 ColorType::Rgba32F => self.img.to_rgba32f().into(),
-                _ => self.img.to_rgba8().into(),
+                ColorType::Rgba8 | _ => self.img.to_rgba8().into(),
             };
             self.update_image(new_img);
         }
+    }
+
+    /// Side panel content
+    pub(crate) fn image_operations(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
+        self.button_convert(ui);
         ui.separator();
         self.button_outline(ui, error_manager);
         ui.separator();
@@ -212,9 +216,8 @@ impl TarsierApp {
                         ColorType::La16 => inner.to_luma_alpha16().into(),
                         ColorType::Rgb8 => inner.to_rgb8().into(),
                         ColorType::Rgb16 => inner.to_rgb16().into(),
-                        ColorType::Rgba8 => inner.to_rgba8().into(),
                         ColorType::Rgba16 => inner.to_rgba16().into(),
-                        _ => inner.to_rgba8().into(),
+                        ColorType::Rgba8 | _ => inner.to_rgba8().into(),
                     }
                 },
                 error_manager,
@@ -271,6 +274,8 @@ impl TarsierApp {
     }
 
     /// Apply operation
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_sign_loss)]
     pub(crate) fn apply_op<F>(&mut self, func: F, error_manager: &mut ErrorManager)
     where
         F: Fn(&DynamicImage) -> DynamicImage,
@@ -283,27 +288,24 @@ impl TarsierApp {
                 selection.max.y as u32,
             )
         });
-        match current_selection {
-            Some(selection) => {
-                let cropped_img = self.img.crop(
-                    selection.0,
-                    selection.1,
-                    selection.2 - selection.0,
-                    selection.3 - selection.1,
-                );
-                let inner = func(&cropped_img);
-                if let Err(e) = self.img.copy_from(&inner, selection.0, selection.1) {
-                    error_manager.add_error(AppError::new_with_source(
-                        "Cannot update selected image part",
-                        Arc::new(e),
-                    ));
-                }
-                self.updated_image();
+        if let Some(selection) = current_selection {
+            let cropped_img = self.img.crop(
+                selection.0,
+                selection.1,
+                selection.2 - selection.0,
+                selection.3 - selection.1,
+            );
+            let inner = func(&cropped_img);
+            if let Err(e) = self.img.copy_from(&inner, selection.0, selection.1) {
+                error_manager.add_error(AppError::new_with_source(
+                    "Cannot update selected image part",
+                    Arc::new(e),
+                ));
             }
-            None => {
-                let new_img = func(&self.img);
-                self.update_image(new_img);
-            }
+            self.updated_image();
+        } else {
+            let new_img = func(&self.img);
+            self.update_image(new_img);
         }
     }
 
@@ -329,6 +331,7 @@ impl TarsierApp {
     }
 
     /// Button to show the outline
+    #[allow(clippy::similar_names)]
     pub fn button_outline(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
         if ui.button("sobel outline").clicked() {
             self.apply_op(
@@ -374,8 +377,9 @@ impl TarsierApp {
     }
 
     /// Draw a point
+    #[allow(clippy::cast_sign_loss)]
     pub fn draw_point(&mut self, x_center: i32, y_center: i32) {
-        let radius = self.image_operations.pen_radius as i32;
+        let radius = i32::try_from(self.image_operations.pen_radius).unwrap_or(10);
         let color = image::Rgba(self.image_operations.pen_color);
         for y in (y_center - radius)..=(y_center + radius) {
             for x in (x_center - radius)..=(x_center + radius) {
@@ -383,8 +387,8 @@ impl TarsierApp {
                     // Ensure pixel is within bounds
                     if x >= 0
                         && y >= 0
-                        && x < self.img.width() as i32
-                        && y < self.img.height() as i32
+                        && x < i32::try_from(self.img.width()).unwrap_or(i32::MAX)
+                        && y < i32::try_from(self.img.height()).unwrap_or(i32::MAX)
                     {
                         if self.image_operations.drawing_blend {
                             let mut current_pixel = self.img.get_pixel(x as u32, y as u32);

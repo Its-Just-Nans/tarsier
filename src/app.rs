@@ -134,11 +134,11 @@ impl Default for TarsierApp {
             img,
             texture: None,
             exif: None,
-            cursor_info: Default::default(),
+            cursor_info: CursorState::default(),
             image_info_as_window: false,
-            image_operations: Default::default(),
+            image_operations: ImageOperations::default(),
             save_path: None,
-            new_image: Default::default(),
+            new_image: NewImage::default(),
         }
     }
 }
@@ -175,10 +175,10 @@ impl TarsierApp {
         } else {
             match self.cursor_info.selection {
                 Some(rect) => {
-                    let width = rect.width().abs() as u32;
-                    let height = rect.height().abs() as u32;
-                    ui.label(format!("Width: {width}"));
-                    ui.label(format!("Height: {height}"));
+                    let width = rect.width().abs();
+                    let height = rect.height().abs();
+                    ui.label(format!("Width: {width:.0}"));
+                    ui.label(format!("Height: {height:.0}"));
                     ui.label(format!("Min: {:?}", rect.left_top()));
                     ui.label(format!("Max: {:?}", rect.right_bottom()));
                 }
@@ -193,6 +193,8 @@ impl TarsierApp {
                 } else {
                     icon_image.tint(Color32::BLACK)
                 };
+                #[allow(clippy::cast_sign_loss)]
+                #[allow(clippy::cast_possible_truncation)]
                 if ui
                     .add(egui::Button::image_and_text(icon, "Crop"))
                     .on_hover_text("Crop the image")
@@ -215,7 +217,7 @@ impl TarsierApp {
 
     /// Update the image file
     pub(crate) fn update_file(&mut self, new_img: DynamicImage, opt_cursor: Option<Cursor<&[u8]>>) {
-        self.saved_img = new_img.clone();
+        self.saved_img.clone_from(&new_img);
         self.update_image(new_img);
         let exifreader = exif::Reader::new();
         if let Some(bytes) = opt_cursor {
@@ -226,7 +228,7 @@ impl TarsierApp {
                     self.exif = None;
                     log::info!("Cannot get exif of image: {e}");
                 }
-            };
+            }
         } else {
             self.exif = None;
         }
@@ -291,11 +293,11 @@ impl BladvakApp<'_> for TarsierApp {
     }
 
     fn menu_file(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
-        self.app_menu_file(ui, error_manager)
+        self.app_menu_file(ui, error_manager);
     }
 
     fn central_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
-        self.app_central_panel(ui, error_manager)
+        self.app_central_panel(ui, error_manager);
     }
 
     fn name() -> String {

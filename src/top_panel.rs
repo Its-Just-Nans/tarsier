@@ -25,7 +25,7 @@ impl TarsierApp {
         if ui.button("New").clicked() {
             self.new_image.is_open = true;
             ui.close();
-        };
+        }
         ui.menu_button("Save", |ui| {
             if ui.button("PNG").clicked() {
                 ui.close();
@@ -35,7 +35,7 @@ impl TarsierApp {
                 ))));
                 match save_path {
                     Ok(save_p) => {
-                        self.save_path = save_p.clone();
+                        self.save_path.clone_from(&save_p);
                         if let Some(path_to_save) = save_p
                             && let Err(err) = self.save_image(ImageFormat::Png, &path_to_save)
                         {
@@ -55,7 +55,7 @@ impl TarsierApp {
                 ))));
                 match save_path {
                     Ok(save_p) => {
-                        self.save_path = save_p.clone();
+                        self.save_path.clone_from(&save_p);
                         if let Some(path_to_save) = save_p
                             && let Err(err) = self.save_image(ImageFormat::Jpeg, &path_to_save)
                         {
@@ -75,7 +75,7 @@ impl TarsierApp {
                 ))));
                 match save_path {
                     Ok(save_p) => {
-                        self.save_path = save_p.clone();
+                        self.save_path.clone_from(&save_p);
                         if let Some(path_to_save) = save_p
                             && let Err(err) = self.save_image(ImageFormat::Bmp, &path_to_save)
                         {
@@ -95,7 +95,7 @@ impl TarsierApp {
                 ))));
                 match save_path {
                     Ok(save_p) => {
-                        self.save_path = save_p.clone();
+                        self.save_path.clone_from(&save_p);
                         if let Some(path_to_save) = save_p
                             && let Err(err) = self.save_image(ImageFormat::Gif, &path_to_save)
                         {
@@ -110,10 +110,13 @@ impl TarsierApp {
         });
     }
 
-    /// Show the top panel
-    pub(crate) fn app_top_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
-        let is_dark_theme = ui.ctx().style().visuals.dark_mode;
-        ui.separator();
+    /// Top panel operations
+    fn top_panel_operations(
+        &mut self,
+        ui: &mut egui::Ui,
+        error_manager: &mut ErrorManager,
+        is_dark_theme: bool,
+    ) {
         let ico_image = Image::new(Self::RESET_ICON);
         if ui
             .add(egui::Button::image(if is_dark_theme {
@@ -138,7 +141,7 @@ impl TarsierApp {
             .on_hover_text("Rotate 90 degrees clockwise")
             .clicked()
         {
-            self.apply_op(|img| img.rotate90(), error_manager);
+            self.apply_op(image::DynamicImage::rotate90, error_manager);
         }
 
         let ico_image = Image::new(Self::ROTATE_CCW_ICON);
@@ -151,7 +154,7 @@ impl TarsierApp {
             .on_hover_text("Rotate 90 degrees counter-clockwise")
             .clicked()
         {
-            self.apply_op(|img| img.rotate270(), error_manager);
+            self.apply_op(image::DynamicImage::rotate270, error_manager);
         }
 
         let ico_image = Image::new(Self::FLIP_H_ICON);
@@ -164,7 +167,7 @@ impl TarsierApp {
             .on_hover_text("Flip horizontally")
             .clicked()
         {
-            self.apply_op(|img| img.fliph(), error_manager);
+            self.apply_op(image::DynamicImage::fliph, error_manager);
         }
         let ico_image = Image::new(Self::FLIP_V_ICON);
         if ui
@@ -176,8 +179,15 @@ impl TarsierApp {
             .on_hover_text("Flip vertically")
             .clicked()
         {
-            self.apply_op(|img| img.flipv(), error_manager);
+            self.apply_op(image::DynamicImage::flipv, error_manager);
         }
+    }
+
+    /// Show the top panel
+    pub(crate) fn app_top_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
+        let is_dark_theme = ui.ctx().style().visuals.dark_mode;
+        ui.separator();
+        self.top_panel_operations(ui, error_manager, is_dark_theme);
         ui.separator();
         let (default_color, background_color) = if ui.visuals().dark_mode {
             (Color32::LIGHT_GRAY, Color32::DARK_BLUE)
@@ -225,9 +235,9 @@ impl TarsierApp {
             ui.separator();
             if ui
                 .label(format!(
-                    "Selection: {}x{}",
-                    (selection.max.x - selection.min.x).abs() as u32,
-                    (selection.max.y - selection.min.y).abs() as u32
+                    "Selection: {:.0}x{:.0}",
+                    (selection.max.x - selection.min.x).abs(),
+                    (selection.max.y - selection.min.y).abs()
                 ))
                 .on_hover_text("Click to clear selection")
                 .clicked()
