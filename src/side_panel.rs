@@ -311,17 +311,20 @@ impl TarsierApp {
 
     /// Button to draw settings
     pub fn button_drawing(&mut self, ui: &mut egui::Ui) {
+        let max_radius = self.img.width().max(self.img.height());
         ui.add(egui::Slider::new(
             &mut self.image_operations.pen_radius,
-            1..=500,
-        ));
+            1..=max_radius / 4,
+        ))
+        .on_hover_text("Pen radius");
         let [r, g, b, a] = self.image_operations.pen_color;
         let mut color = egui::Color32::from_rgba_premultiplied(r, g, b, a);
         egui::color_picker::color_edit_button_srgba(
             ui,
             &mut color,
             egui::color_picker::Alpha::OnlyBlend,
-        );
+        )
+        .on_hover_text("Pen color");
         self.image_operations.pen_color = [color.r(), color.g(), color.b(), color.a()];
         ui.checkbox(&mut self.image_operations.drawing_blend, "Blend");
         ui.checkbox(

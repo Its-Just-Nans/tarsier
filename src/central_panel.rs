@@ -1,6 +1,6 @@
 //! Central panel
 use bladvak::eframe::egui::{
-    self, ColorImage, Id, Image, ImageData, Modal, Pos2, Sense, TextureOptions, Vec2,
+    self, Color32, ColorImage, Id, Image, ImageData, Modal, Pos2, Sense, TextureOptions, Vec2,
 };
 use bladvak::errors::ErrorManager;
 use image::DynamicImage;
@@ -38,6 +38,18 @@ impl TarsierApp {
             let ecart_y = img_position.min.y + viewport.min.y;
 
             let painter = ui.painter();
+
+            if matches!(self.image_operations.mode, EditMode::Drawing)
+                && let Some(pos) = ui.ctx().input(|i| i.pointer.clone()).latest_pos()
+            {
+                painter.circle(
+                    pos,
+                    self.image_operations.pen_radius as f32,
+                    Color32::TRANSPARENT,
+                    egui::Stroke::new(1.0, egui::Color32::BLACK),
+                );
+            }
+
             if response.dragged() {
                 if let Some(pos) = response.interact_pointer_pos() {
                     if !self.cursor_info.is_selecting {
