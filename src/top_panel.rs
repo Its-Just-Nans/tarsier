@@ -4,6 +4,7 @@ use bladvak::eframe::egui::{
 };
 use bladvak::errors::ErrorManager;
 use image::ImageFormat;
+use std::path::Path;
 use std::{io::Cursor, path::PathBuf};
 
 use crate::{TarsierApp, side_panel::EditMode};
@@ -29,7 +30,7 @@ impl TarsierApp {
         ui.menu_button("Save", |ui| {
             if ui.button("PNG").clicked() {
                 ui.close();
-                let save_path = bladvak::utils::get_save_path(&Some(PathBuf::from(format!(
+                let save_path = bladvak::utils::get_save_path(Some(&PathBuf::from(format!(
                     "image.{}",
                     ImageFormat::Png.extensions_str()[0]
                 ))));
@@ -49,7 +50,7 @@ impl TarsierApp {
             }
             if ui.button("JPEG").clicked() {
                 ui.close();
-                let save_path = bladvak::utils::get_save_path(&Some(PathBuf::from(format!(
+                let save_path = bladvak::utils::get_save_path(Some(&PathBuf::from(format!(
                     "image.{}",
                     ImageFormat::Jpeg.extensions_str()[0]
                 ))));
@@ -69,7 +70,7 @@ impl TarsierApp {
             }
             if ui.button("BMP").clicked() {
                 ui.close();
-                let save_path = bladvak::utils::get_save_path(&Some(PathBuf::from(format!(
+                let save_path = bladvak::utils::get_save_path(Some(&PathBuf::from(format!(
                     "image.{}",
                     ImageFormat::Bmp.extensions_str()[0]
                 ))));
@@ -89,7 +90,7 @@ impl TarsierApp {
             }
             if ui.button("GIF").clicked() {
                 ui.close();
-                let save_path = bladvak::utils::get_save_path(&Some(PathBuf::from(format!(
+                let save_path = bladvak::utils::get_save_path(Some(&PathBuf::from(format!(
                     "image.{}",
                     ImageFormat::Gif.extensions_str()[0]
                 ))));
@@ -258,7 +259,7 @@ impl TarsierApp {
 
 impl TarsierApp {
     /// Save the current image
-    fn save_image(&mut self, format: ImageFormat, path_file: &PathBuf) -> Result<(), String> {
+    fn save_image(&mut self, format: ImageFormat, path_file: &Path) -> Result<(), String> {
         let mut bytes: Vec<u8> = Vec::new();
         self.img
             .write_to(&mut Cursor::new(&mut bytes), format)
