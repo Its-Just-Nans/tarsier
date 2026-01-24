@@ -89,14 +89,18 @@ impl BladvakPanel for CursorInfo {
     type App = TarsierApp;
 
     fn has_settings(&self) -> bool {
-        false
+        true
     }
     fn ui_settings(
         &self,
-        _app: &mut Self::App,
-        _ui: &mut egui::Ui,
+        app: &mut Self::App,
+        ui: &mut egui::Ui,
         _error_manager: &mut bladvak::ErrorManager,
     ) {
+        ui.checkbox(
+            &mut app.cursor_info.remove_selection_after_op,
+            "Remove selection after change",
+        );
     }
 
     fn has_ui(&self) -> bool {

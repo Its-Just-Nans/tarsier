@@ -29,7 +29,7 @@ impl TarsierApp {
         ui.menu_button("Save", |ui| {
             if ui.button("PNG").clicked() {
                 ui.close();
-                let save_path = bladvak::utils::get_save_path(Some(PathBuf::from(format!(
+                let save_path = bladvak::utils::get_save_path(&Some(PathBuf::from(format!(
                     "image.{}",
                     ImageFormat::Png.extensions_str()[0]
                 ))));
@@ -49,7 +49,7 @@ impl TarsierApp {
             }
             if ui.button("JPEG").clicked() {
                 ui.close();
-                let save_path = bladvak::utils::get_save_path(Some(PathBuf::from(format!(
+                let save_path = bladvak::utils::get_save_path(&Some(PathBuf::from(format!(
                     "image.{}",
                     ImageFormat::Jpeg.extensions_str()[0]
                 ))));
@@ -69,7 +69,7 @@ impl TarsierApp {
             }
             if ui.button("BMP").clicked() {
                 ui.close();
-                let save_path = bladvak::utils::get_save_path(Some(PathBuf::from(format!(
+                let save_path = bladvak::utils::get_save_path(&Some(PathBuf::from(format!(
                     "image.{}",
                     ImageFormat::Bmp.extensions_str()[0]
                 ))));
@@ -89,7 +89,7 @@ impl TarsierApp {
             }
             if ui.button("GIF").clicked() {
                 ui.close();
-                let save_path = bladvak::utils::get_save_path(Some(PathBuf::from(format!(
+                let save_path = bladvak::utils::get_save_path(&Some(PathBuf::from(format!(
                     "image.{}",
                     ImageFormat::Gif.extensions_str()[0]
                 ))));

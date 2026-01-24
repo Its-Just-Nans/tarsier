@@ -65,6 +65,9 @@ pub struct CursorState {
 
     /// Selection as windows
     pub cursor_op_as_window: bool,
+
+    /// Remove selection after operation
+    pub remove_selection_after_op: bool,
 }
 
 impl Default for CursorState {
@@ -75,6 +78,7 @@ impl Default for CursorState {
             start_selection: Pos2::ZERO,
             last_drawing_point: None,
             is_selecting: false,
+            remove_selection_after_op: false,
         }
     }
 }
@@ -243,7 +247,9 @@ impl TarsierApp {
     /// Post update image
     pub(crate) fn updated_image(&mut self) {
         self.texture = None;
-        self.cursor_info.selection = None;
+        if self.cursor_info.remove_selection_after_op {
+            self.cursor_info.selection = None;
+        }
     }
 }
 

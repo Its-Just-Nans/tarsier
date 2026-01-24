@@ -163,11 +163,7 @@ impl TarsierApp {
     /// Button for convert
     fn button_convert(&mut self, ui: &mut egui::Ui) {
         ui.label("Convert");
-        egui::ComboBox::from_id_salt("convert_box")
-            .selected_text(format!("{:?}", self.image_operations.other.convert_to))
-            .show_ui(ui, |ui| {
-                Self::combo_box_color_type(ui, &mut self.image_operations.other.convert_to);
-            });
+        Self::combo_box_color_type(ui, &mut self.image_operations.other.convert_to);
         if ui.button("Convert").clicked() {
             let new_img = match self.image_operations.other.convert_to {
                 ColorType::L8 => self.img.to_luma8().into(),
