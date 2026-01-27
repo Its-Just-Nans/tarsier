@@ -214,6 +214,7 @@ impl TarsierApp {
                         .img
                         .crop_imm(min_x, min_y, max_x - min_x, max_y - min_y);
                     self.update_image(cropped_img);
+                    self.cursor_info.selection = None;
                 }
             }
         }
