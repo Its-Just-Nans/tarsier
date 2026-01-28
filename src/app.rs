@@ -37,8 +37,8 @@ impl Default for NewImage {
     fn default() -> Self {
         Self {
             is_open: false,
-            height: 400,
-            width: 400,
+            height: 1024,
+            width: 1024,
             color_type: ColorType::Rgba16,
         }
     }

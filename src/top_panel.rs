@@ -12,6 +12,8 @@ use crate::{TarsierApp, side_panel::EditMode};
 impl TarsierApp {
     /// Reset icon
     const RESET_ICON: ImageSource<'_> = include_image!("../assets/icon_x-circle.png");
+    /// Save state icon
+    const SAVE_STATE_ICON: ImageSource<'_> = include_image!("../assets/icon_check.png");
     /// Rotate icon
     const ROTATE_CCW_ICON: ImageSource<'_> = include_image!("../assets/icon_rotate_ccw.png");
     /// Rotate icon inverse
@@ -125,14 +127,27 @@ impl TarsierApp {
             } else {
                 ico_image.tint(Color32::BLACK)
             }))
-            .on_hover_text("Reset the image")
+            .on_hover_text("Reset the image to the saved state")
             .clicked()
         {
             let new_img = self.saved_img.clone();
             self.update_image(new_img);
         }
-        let ico_image = Image::new(Self::ROTATE_CW_ICON);
+        let ico_image = Image::new(Self::SAVE_STATE_ICON);
+        if ui
+            .add(egui::Button::image(if is_dark_theme {
+                ico_image
+            } else {
+                ico_image.tint(Color32::BLACK)
+            }))
+            .on_hover_text("Save the current image state")
+            .clicked()
+        {
+            self.saved_img = self.img.clone();
+        }
         ui.separator();
+
+        let ico_image = Image::new(Self::ROTATE_CW_ICON);
         if ui
             .add(egui::Button::image(if is_dark_theme {
                 ico_image
