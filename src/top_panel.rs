@@ -29,80 +29,72 @@ impl TarsierApp {
             self.new_image.is_open = true;
             ui.close();
         }
+        self.menu_clipboard(ui, error_manager);
         ui.menu_button("Save", |ui| {
             if ui.button("PNG").clicked() {
                 ui.close();
-                let save_path = bladvak::utils::get_save_path(Some(&PathBuf::from(format!(
-                    "image.{}",
-                    ImageFormat::Png.extensions_str()[0]
-                ))));
-                match save_path {
-                    Ok(save_p) => {
-                        self.save_path.clone_from(&save_p);
-                        if let Some(path_to_save) = save_p
-                            && let Err(err) = self.save_image(ImageFormat::Png, &path_to_save)
-                        {
-                            error_manager.add_error(err);
-                        }
-                    }
-                    Err(e) => {
-                        error_manager.add_error(e);
-                    }
-                }
+                self.save_image_with_format(
+                    ImageFormat::Png.extensions_str()[0],
+                    ImageFormat::Png,
+                    error_manager,
+                );
             }
             if ui.button("JPEG").clicked() {
                 ui.close();
-                let save_path = bladvak::utils::get_save_path(Some(&PathBuf::from(format!(
-                    "image.{}",
-                    ImageFormat::Jpeg.extensions_str()[0]
-                ))));
-                match save_path {
-                    Ok(save_p) => {
-                        self.save_path.clone_from(&save_p);
-                        if let Some(path_to_save) = save_p
-                            && let Err(err) = self.save_image(ImageFormat::Jpeg, &path_to_save)
-                        {
-                            error_manager.add_error(err);
-                        }
-                    }
-                    Err(e) => {
-                        error_manager.add_error(e);
-                    }
-                }
+                self.save_image_with_format(
+                    ImageFormat::Jpeg.extensions_str()[0],
+                    ImageFormat::Jpeg,
+                    error_manager,
+                );
             }
             if ui.button("BMP").clicked() {
                 ui.close();
-                let save_path = bladvak::utils::get_save_path(Some(&PathBuf::from(format!(
-                    "image.{}",
-                    ImageFormat::Bmp.extensions_str()[0]
-                ))));
-                match save_path {
-                    Ok(save_p) => {
-                        self.save_path.clone_from(&save_p);
-                        if let Some(path_to_save) = save_p
-                            && let Err(err) = self.save_image(ImageFormat::Bmp, &path_to_save)
-                        {
-                            error_manager.add_error(err);
-                        }
-                    }
-                    Err(e) => {
-                        error_manager.add_error(e);
-                    }
-                }
+                self.save_image_with_format(
+                    ImageFormat::Bmp.extensions_str()[0],
+                    ImageFormat::Bmp,
+                    error_manager,
+                );
             }
             if ui.button("GIF").clicked() {
                 ui.close();
-                let save_path = bladvak::utils::get_save_path(Some(&PathBuf::from(format!(
-                    "image.{}",
-                    ImageFormat::Gif.extensions_str()[0]
-                ))));
-                match save_path {
-                    Ok(save_p) => {
-                        self.save_path.clone_from(&save_p);
-                        if let Some(path_to_save) = save_p
-                            && let Err(err) = self.save_image(ImageFormat::Gif, &path_to_save)
-                        {
-                            error_manager.add_error(err);
+                self.save_image_with_format(
+                    ImageFormat::Gif.extensions_str()[0],
+                    ImageFormat::Gif,
+                    error_manager,
+                );
+            }
+        });
+    }
+
+    /// Show the clipboard menu
+    pub fn menu_clipboard(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
+        ui.menu_button("Clipboard", |ui| {
+            if ui.button("Copy").clicked()
+                && let Err(e) = bladvak::utils::set_image_in_clipboard(
+                    ui.ctx(),
+                    self.img.width() as usize,
+                    self.img.height() as usize,
+                    self.img.to_rgba8().as_flat_samples().as_slice(),
+                )
+            {
+                error_manager.add_error(e);
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            if ui.button("Paste").clicked() {
+                match bladvak::utils::get_image_from_clipboard() {
+                    Ok((width, height, rgba_data)) => {
+                        #[allow(clippy::cast_possible_truncation)]
+                        if let Some(buffer) = image::ImageBuffer::from_raw(
+                            width as u32,
+                            height as u32,
+                            rgba_data.clone(),
+                        ) {
+                            let img = image::DynamicImage::ImageRgba8(buffer);
+                            self.update_image(img);
+                        } else {
+                            error_manager
+                                .add_error("Invalid image data from clipboard".to_string());
                         }
                     }
                     Err(e) => {
@@ -111,6 +103,30 @@ impl TarsierApp {
                 }
             }
         });
+    }
+
+    /// Save the current image with the specified format
+    pub(crate) fn save_image_with_format(
+        &mut self,
+        extension: &str,
+        image_format: ImageFormat,
+        error_manager: &mut ErrorManager,
+    ) {
+        let save_path =
+            bladvak::utils::get_save_path(Some(&PathBuf::from(format!("image.{extension}"))));
+        match save_path {
+            Ok(save_p) => {
+                self.save_path.clone_from(&save_p);
+                if let Some(path_to_save) = save_p
+                    && let Err(err) = self.save_image(image_format, &path_to_save)
+                {
+                    error_manager.add_error(err);
+                }
+            }
+            Err(e) => {
+                error_manager.add_error(e);
+            }
+        }
     }
 
     /// Top panel operations
