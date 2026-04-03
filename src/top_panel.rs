@@ -217,7 +217,7 @@ impl TarsierApp {
 
     /// Show the top panel
     pub(crate) fn app_top_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
-        let is_dark_theme = ui.ctx().style().visuals.dark_mode;
+        let is_dark_theme = ui.ctx().global_style().visuals.dark_mode;
         ui.separator();
         self.top_panel_operations(ui, error_manager, is_dark_theme);
         ui.separator();

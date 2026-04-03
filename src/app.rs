@@ -192,7 +192,7 @@ impl TarsierApp {
             }
             if let Some(selection) = self.cursor_info.selection {
                 let icon_image = Image::new(Self::CROP_ICON);
-                let icon = if ui.ctx().style().visuals.dark_mode {
+                let icon = if ui.ctx().global_style().visuals.dark_mode {
                     icon_image
                 } else {
                     icon_image.tint(Color32::BLACK)
@@ -260,7 +260,8 @@ impl BladvakApp<'_> for TarsierApp {
         ui: &mut egui::Ui,
         func_ui: impl FnOnce(&mut egui::Ui, &mut TarsierApp),
     ) {
-        egui::Frame::central_panel(&ui.ctx().style()).show(ui, |panel_ui| func_ui(panel_ui, self));
+        egui::Frame::central_panel(&ui.ctx().global_style())
+            .show(ui, |panel_ui| func_ui(panel_ui, self));
     }
 
     fn panel_list(&self) -> Vec<Box<dyn bladvak::app::BladvakPanel<App = Self>>> {
