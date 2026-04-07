@@ -103,6 +103,7 @@ jobs:
               run: ./trunk build
 
     build:
+        if: contains(join(github.event.commits.*.modified, ' '), 'Cargo.toml') || contains(join(github.event.commits.*.added, ' '), 'Cargo.toml')
         runs-on: ${{ matrix.os }}
         strategy:
             fail-fast: false
