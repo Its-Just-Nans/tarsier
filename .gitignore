@@ -2,12 +2,12 @@
 .DS_Store
 
 # trunk output folder
-dist
+dist/
 
 # Rust compile target directories:
-target
-target_ra
-target_wasm
+target/
+target_ra/
+target_wasm/
 
 # https://github.com/lycheeverse/lychee
-.lycheecache
+.lycheecache/
