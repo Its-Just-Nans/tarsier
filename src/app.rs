@@ -339,7 +339,7 @@ impl BladvakApp<'_> for TarsierApp {
                     Ok(app)
                 }
                 Err(e) => {
-                    log::error!("Failed to load image '{}': {}", path, e);
+                    log::error!("Failed to load image '{path}': {e}");
                     Err(AppError::new_with_source(
                         format!("Failed to load image '{path}'"),
                         Arc::new(e),
