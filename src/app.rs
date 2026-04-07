@@ -6,7 +6,7 @@ use bladvak::{
 };
 use bladvak::{
     eframe::{
-        self, CreationContext,
+        CreationContext,
         egui::{self, Color32, Image, ImageSource, Pos2},
     },
     utils::is_native,
@@ -148,14 +148,6 @@ impl Default for TarsierApp {
 }
 
 impl TarsierApp {
-    /// Called once before the first frame.
-    fn new_app(saved_state: Self, cc: &eframe::CreationContext<'_>) -> Self {
-        // This is also where you can customize the look and feel of egui using
-        // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
-        egui_extras::install_image_loaders(&cc.egui_ctx);
-        saved_state
-    }
-
     /// Load the default image
     pub(crate) fn load_default_image() -> (DynamicImage, Cursor<&'static [u8]>) {
         let cursor = Cursor::new(ASSET);
@@ -329,6 +321,10 @@ impl BladvakApp<'_> for TarsierApp {
         cc: &CreationContext<'_>,
         args: &[String],
     ) -> Result<Self, AppError> {
+        // This is also where you can customize the look and feel of egui using
+        // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
+        egui_extras::install_image_loaders(&cc.egui_ctx);
+
         if is_native() && args.len() > 1 {
             use image::ImageReader;
             let path = &args[1];
@@ -337,13 +333,13 @@ impl BladvakApp<'_> for TarsierApp {
             let img_reader = ImageReader::new(cursor);
             match img_reader.with_guessed_format()?.decode() {
                 Ok(img) => {
-                    let mut app = Self::new_app(saved_state, cc);
+                    let mut app = saved_state;
                     let cursor_data = Cursor::new(bytes.as_ref());
                     app.update_file(img, Some(cursor_data));
                     Ok(app)
                 }
                 Err(e) => {
-                    eprintln!("Failed to load image '{path}': {e}");
+                    log::error!("Failed to load image '{}': {}", path, e);
                     Err(AppError::new_with_source(
                         format!("Failed to load image '{path}'"),
                         Arc::new(e),
@@ -351,7 +347,7 @@ impl BladvakApp<'_> for TarsierApp {
                 }
             }
         } else {
-            Ok(TarsierApp::new_app(saved_state, cc))
+            Ok(saved_state)
         }
     }
 }
