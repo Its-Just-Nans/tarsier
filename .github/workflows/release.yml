@@ -76,6 +76,7 @@ jobs:
 
     build:
         name: ${{ matrix.job.target }} (${{ matrix.job.os }})
+        if: contains(join(github.event.commits.*.modified, ' '), 'Cargo.toml') || contains(join(github.event.commits.*.added, ' '), 'Cargo.toml')
         runs-on: ${{ matrix.job.os }}
         needs: crate_metadata
         strategy:
