@@ -22,6 +22,7 @@ use crate::{
 
 /// New Image settings
 #[derive(serde::Deserialize, serde::Serialize)]
+#[derive(Debug)]
 pub struct NewImage {
     /// is open
     pub(crate) is_open: bool,
@@ -46,6 +47,7 @@ impl Default for NewImage {
 
 /// Cursor state
 #[derive(serde::Deserialize, serde::Serialize)]
+#[derive(Debug)]
 pub struct CursorState {
     /// Selection rectangle
     #[serde(skip)]
@@ -89,35 +91,35 @@ impl Default for CursorState {
 pub struct TarsierApp {
     /// Current image
     #[serde(skip)]
-    pub img: image::DynamicImage,
+    pub(crate) img: DynamicImage,
 
     /// Save of the image
     #[serde(skip)]
-    pub saved_img: image::DynamicImage,
+    pub(crate) saved_img: DynamicImage,
 
     /// Image texture
     #[serde(skip)]
-    pub texture: Option<egui::TextureHandle>,
+    pub(crate) texture: Option<egui::TextureHandle>,
 
     /// Exif of the image
     #[serde(skip)]
-    pub exif: Option<exif::Exif>,
+    pub(crate) exif: Option<exif::Exif>,
 
     /// Cursor state
-    pub cursor_info: CursorState,
+    pub(crate) cursor_info: CursorState,
 
     /// Image infos as windows
-    pub image_info_as_window: bool,
+    pub(crate) image_info_as_window: bool,
 
     /// Image operations panel
-    pub image_operations: ImageOperations,
+    pub(crate) image_operations: ImageOperations,
 
     /// Path to save the image
-    pub save_path: Option<PathBuf>,
+    pub(crate) save_path: Option<PathBuf>,
 
     /// New image settings
     #[serde(skip)]
-    pub new_image: NewImage,
+    pub(crate) new_image: NewImage,
 }
 
 impl Debug for TarsierApp {
@@ -326,7 +328,6 @@ impl BladvakApp<'_> for TarsierApp {
         egui_extras::install_image_loaders(&cc.egui_ctx);
 
         if is_native() && args.len() > 1 {
-            use image::ImageReader;
             let path = &args[1];
             let bytes = std::fs::read(path)?;
             let cursor: Cursor<&[u8]> = Cursor::new(bytes.as_ref());

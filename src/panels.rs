@@ -21,7 +21,7 @@ impl BladvakPanel for ImageOperationsPanel {
     fn ui_settings(
         &self,
         _app: &mut Self::App,
-        _ui: &mut bladvak::eframe::egui::Ui,
+        _ui: &mut egui::Ui,
         _error_manager: &mut bladvak::ErrorManager,
     ) {
     }
@@ -33,7 +33,7 @@ impl BladvakPanel for ImageOperationsPanel {
     fn ui(
         &self,
         app: &mut Self::App,
-        ui: &mut bladvak::eframe::egui::Ui,
+        ui: &mut egui::Ui,
         error_manager: &mut bladvak::ErrorManager,
     ) {
         app.image_operations(ui, error_manager);

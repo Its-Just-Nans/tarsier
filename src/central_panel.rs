@@ -46,7 +46,7 @@ impl TarsierApp {
                     pos,
                     self.image_operations.pen_radius as f32,
                     Color32::TRANSPARENT,
-                    egui::Stroke::new(1.0, egui::Color32::BLACK),
+                    egui::Stroke::new(1.0, Color32::BLACK),
                 );
             }
 
@@ -130,7 +130,7 @@ impl TarsierApp {
                 painter.rect_stroke(
                     rect_selection,
                     0.0,
-                    egui::Stroke::new(1.0, egui::Color32::BLACK),
+                    egui::Stroke::new(1.0, Color32::BLACK),
                     egui::StrokeKind::Outside,
                 );
                 // rect above selection
@@ -140,7 +140,7 @@ impl TarsierApp {
                         Pos2::new(size[0] as f32 + min_pos.x, rect_selection.min.y),
                     ),
                     0.0,
-                    egui::Color32::from_black_alpha(50),
+                    Color32::from_black_alpha(50),
                 );
                 // rect below selection
                 painter.rect_filled(
@@ -149,7 +149,7 @@ impl TarsierApp {
                         Pos2::new(size[0] as f32 + min_pos.x, size[1] as f32 + min_pos.y),
                     ),
                     0.0,
-                    egui::Color32::from_black_alpha(50),
+                    Color32::from_black_alpha(50),
                 );
                 // rect left of selection
                 painter.rect_filled(
@@ -158,7 +158,7 @@ impl TarsierApp {
                         Pos2::new(rect_selection.min.x, rect_selection.max.y),
                     ),
                     0.0,
-                    egui::Color32::from_black_alpha(50),
+                    Color32::from_black_alpha(50),
                 );
                 // rect right of selection
                 painter.rect_filled(
@@ -167,7 +167,7 @@ impl TarsierApp {
                         Pos2::new(size[0] as f32 + min_pos.x, rect_selection.max.y),
                     ),
                     0.0,
-                    egui::Color32::from_black_alpha(50),
+                    Color32::from_black_alpha(50),
                 );
             }
         });

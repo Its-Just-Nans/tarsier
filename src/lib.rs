@@ -10,7 +10,12 @@
     clippy::cargo,
     clippy::unwrap_used,
     clippy::expect_used,
-    clippy::pedantic
+    clippy::pedantic,
+    clippy::correctness,
+    clippy::suspicious,
+    clippy::style,
+    clippy::complexity,
+    clippy::perf,
 )]
 #![allow(clippy::multiple_crate_versions)]
 
