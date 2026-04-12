@@ -15,7 +15,7 @@
     clippy::suspicious,
     clippy::style,
     clippy::complexity,
-    clippy::perf,
+    clippy::perf
 )]
 #![allow(clippy::multiple_crate_versions)]
 

@@ -21,8 +21,7 @@ use crate::{
 };
 
 /// New Image settings
-#[derive(serde::Deserialize, serde::Serialize)]
-#[derive(Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct NewImage {
     /// is open
     pub(crate) is_open: bool,
@@ -46,8 +45,7 @@ impl Default for NewImage {
 }
 
 /// Cursor state
-#[derive(serde::Deserialize, serde::Serialize)]
-#[derive(Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct CursorState {
     /// Selection rectangle
     #[serde(skip)]
