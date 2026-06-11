@@ -112,9 +112,11 @@ impl TarsierApp {
         image_format: ImageFormat,
         error_manager: &mut ErrorManager,
     ) {
-        let current_save_path = self.save_path.clone().unwrap_or(PathBuf::from(format!("image.{extension}")));
-        let save_path =
-            bladvak::utils::get_save_path(Some(&current_save_path));
+        let current_save_path = self
+            .save_path
+            .clone()
+            .unwrap_or(PathBuf::from(format!("image.{extension}")));
+        let save_path = bladvak::utils::get_save_path(Some(&current_save_path));
         match save_path {
             Ok(save_p) => {
                 self.save_path.clone_from(&save_p);
