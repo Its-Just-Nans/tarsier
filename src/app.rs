@@ -326,8 +326,10 @@ impl BladvakApp<'_> for TarsierApp {
         egui_extras::install_image_loaders(&cc.egui_ctx);
 
         if is_native() && args.len() > 1 {
+            use std::fs;
             let path = &args[1];
-            let bytes = std::fs::read(path)?;
+            let absolute_path = fs::canonicalize(path)?;
+            let bytes = fs::read(&absolute_path)?;
             let cursor: Cursor<&[u8]> = Cursor::new(bytes.as_ref());
             let img_reader = ImageReader::new(cursor);
             match img_reader.with_guessed_format()?.decode() {
@@ -335,12 +337,13 @@ impl BladvakApp<'_> for TarsierApp {
                     let mut app = saved_state;
                     let cursor_data = Cursor::new(bytes.as_ref());
                     app.update_file(img, Some(cursor_data));
+                    app.save_path = Some(absolute_path);
                     Ok(app)
                 }
                 Err(e) => {
-                    log::error!("Failed to load image '{path}': {e}");
+                    log::error!("Failed to load image '{}': {e}", absolute_path.display());
                     Err(AppError::new_with_source(
-                        format!("Failed to load image '{path}'"),
+                        format!("Failed to load image '{}'", absolute_path.display()),
                         Arc::new(e),
                     ))
                 }
