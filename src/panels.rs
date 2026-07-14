@@ -98,7 +98,7 @@ impl BladvakPanel for CursorInfo {
         _error_manager: &mut bladvak::ErrorManager,
     ) {
         ui.checkbox(
-            &mut app.cursor_info.remove_selection_after_op,
+            &mut app.mode.selection.remove_selection_after_op,
             "Remove selection after change",
         );
     }

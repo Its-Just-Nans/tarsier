@@ -7,7 +7,7 @@ use image::ImageFormat;
 use std::path::Path;
 use std::{io::Cursor, path::PathBuf};
 
-use crate::{TarsierApp, side_panel::EditMode};
+use crate::{TarsierApp, edit_mode::EditMode};
 
 impl TarsierApp {
     /// Reset icon
@@ -239,7 +239,7 @@ impl TarsierApp {
             },
         );
         job.append(
-            &format!("{}", self.image_operations.mode.current),
+            &format!("{}", self.mode.current),
             0.0,
             TextFormat {
                 color: default_color,
@@ -248,30 +248,18 @@ impl TarsierApp {
             },
         );
         ui.menu_button(job, |ui| {
-            let previous_state = self.image_operations.mode.current;
-            ui.selectable_value(
-                &mut self.image_operations.mode.current,
-                EditMode::Nothing,
-                "Nothing",
-            );
-            ui.selectable_value(
-                &mut self.image_operations.mode.current,
-                EditMode::Selection,
-                "Selection",
-            );
-            ui.selectable_value(
-                &mut self.image_operations.mode.current,
-                EditMode::Drawing,
-                "Drawing",
-            );
-            if self.image_operations.mode.current != previous_state {
+            let previous_state = self.mode.current;
+            ui.selectable_value(&mut self.mode.current, EditMode::Nothing, "Nothing");
+            ui.selectable_value(&mut self.mode.current, EditMode::Selection, "Selection");
+            ui.selectable_value(&mut self.mode.current, EditMode::Drawing, "Drawing");
+            if self.mode.current != previous_state {
                 ui.close();
-                if self.image_operations.mode.current != EditMode::Selection {
-                    self.cursor_info.selection = None;
+                if self.mode.current != EditMode::Selection {
+                    self.mode.selection.selection = None;
                 }
             }
         });
-        if let Some(selection) = self.cursor_info.selection {
+        if let Some(selection) = self.mode.selection.selection {
             ui.separator();
             if ui
                 .label(format!(
@@ -282,7 +270,7 @@ impl TarsierApp {
                 .on_hover_text("Click to clear selection")
                 .clicked()
             {
-                self.cursor_info.selection = None;
+                self.mode.selection.selection = None;
             }
         }
         ui.separator();

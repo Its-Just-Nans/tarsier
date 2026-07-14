@@ -6,7 +6,7 @@ use bladvak::errors::ErrorManager;
 use image::DynamicImage;
 use std::sync::Arc;
 
-use crate::{TarsierApp, side_panel::EditMode};
+use crate::{TarsierApp, edit_mode::EditMode};
 
 impl TarsierApp {
     /// Show the central panel
@@ -39,12 +39,12 @@ impl TarsierApp {
 
             let painter = ui.painter();
 
-            if let EditMode::Drawing = self.image_operations.mode.current
+            if let EditMode::Drawing = self.mode.current
                 && let Some(pos) = ui.ctx().input(|i| i.pointer.clone()).latest_pos()
             {
                 painter.circle(
                     pos,
-                    self.image_operations.mode.drawing.pen_radius as f32,
+                    self.mode.drawing.pen_radius as f32,
                     Color32::TRANSPARENT,
                     egui::Stroke::new(1.0, Color32::BLACK),
                 );
@@ -52,35 +52,35 @@ impl TarsierApp {
 
             if response.dragged() {
                 if let Some(pos) = response.interact_pointer_pos() {
-                    if !self.cursor_info.is_selecting {
-                        self.cursor_info.selection = None;
+                    if !self.mode.selection.is_selecting {
+                        self.mode.selection.selection = None;
                     }
                     let pos = pos - Vec2::new(ecart_x - viewport.min.x, ecart_y - viewport.min.y);
                     let correct_pos = Pos2::new(
                         pos.x.round().clamp(0.0, size[0] as f32),
                         pos.y.round().clamp(0.0, size[1] as f32),
                     );
-                    match self.image_operations.mode.current {
+                    match self.mode.current {
                         EditMode::Nothing => {
                             // no nothing
                         }
                         EditMode::Selection => {
-                            self.cursor_info.selection =
-                                if let Some(_rect) = self.cursor_info.selection {
+                            self.mode.selection.selection =
+                                if let Some(_rect) = self.mode.selection.selection {
                                     Some(egui::Rect::from_two_pos(
-                                        self.cursor_info.start_selection,
+                                        self.mode.selection.start_selection,
                                         correct_pos,
                                     ))
                                 } else {
-                                    self.cursor_info.start_selection = correct_pos;
+                                    self.mode.selection.start_selection = correct_pos;
                                     Some(egui::Rect::from_two_pos(correct_pos, correct_pos))
                                 };
-                            self.cursor_info.is_selecting = true;
+                            self.mode.selection.is_selecting = true;
                         }
                         EditMode::Drawing => {
                             #[allow(clippy::cast_possible_truncation)]
-                            if self.image_operations.mode.drawing.drawing_continuous_line
-                                && let Some(last_post) = self.cursor_info.last_drawing_point
+                            if self.mode.drawing.drawing_continuous_line
+                                && let Some(last_post) = self.mode.selection.last_drawing_point
                             {
                                 let pts = points_between(last_post, correct_pos);
                                 for p in pts {
@@ -89,22 +89,22 @@ impl TarsierApp {
                             } else {
                                 self.draw_point(correct_pos.x as i32, correct_pos.y as i32);
                             }
-                            self.cursor_info.last_drawing_point = Some(correct_pos);
+                            self.mode.selection.last_drawing_point = Some(correct_pos);
                         }
                     }
                 }
             } else {
-                self.cursor_info.is_selecting = false;
-                self.cursor_info.last_drawing_point = None;
+                self.mode.selection.is_selecting = false;
+                self.mode.selection.last_drawing_point = None;
             }
             if response.clicked() {
-                self.cursor_info.selection = None;
-                match self.image_operations.mode.current {
+                self.mode.selection.selection = None;
+                match self.mode.current {
                     EditMode::Nothing => {
                         // do nothing
                     }
                     EditMode::Selection => {
-                        self.cursor_info.selection = None;
+                        self.mode.selection.selection = None;
                     }
                     EditMode::Drawing => {
                         if let Some(pos) = response.interact_pointer_pos() {
@@ -116,12 +116,12 @@ impl TarsierApp {
                             );
                             #[allow(clippy::cast_possible_truncation)]
                             self.draw_point(correct_pos.x as i32, correct_pos.y as i32);
-                            self.cursor_info.last_drawing_point = None;
+                            self.mode.selection.last_drawing_point = None;
                         }
                     }
                 }
             }
-            if let Some(selection) = self.cursor_info.selection {
+            if let Some(selection) = self.mode.selection.selection {
                 let min_pos = img_position.min;
                 let rect_selection = egui::Rect::from_two_pos(
                     Pos2::new(

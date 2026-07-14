@@ -7,7 +7,7 @@ use bladvak::{
 use bladvak::{
     eframe::{
         CreationContext,
-        egui::{self, Color32, Image, ImageSource, Pos2},
+        egui::{self, Color32, Image, ImageSource},
     },
     utils::is_native,
 };
@@ -16,8 +16,9 @@ use image::{ColorType, DynamicImage, ImageReader};
 use std::{fmt::Debug, io::Cursor, path::PathBuf, sync::Arc};
 
 use crate::{
+    edit_mode::{EditMode, Mode},
     panels::{CursorInfo, ImageInfo, ImageOperationsPanel},
-    side_panel::{EditMode, ImageOperations},
+    side_panel::ImageOperations,
 };
 
 /// New Image settings
@@ -44,45 +45,6 @@ impl Default for NewImage {
     }
 }
 
-/// Cursor state
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
-pub struct CursorState {
-    /// Selection rectangle
-    #[serde(skip)]
-    pub selection: Option<egui::Rect>,
-
-    /// Start selection position
-    #[serde(skip)]
-    pub start_selection: Pos2,
-
-    /// Start selection position
-    #[serde(skip)]
-    pub last_drawing_point: Option<Pos2>,
-
-    /// Is currently selecting
-    #[serde(skip)]
-    pub is_selecting: bool,
-
-    /// Selection as windows
-    pub cursor_op_as_window: bool,
-
-    /// Remove selection after operation
-    pub remove_selection_after_op: bool,
-}
-
-impl Default for CursorState {
-    fn default() -> Self {
-        Self {
-            selection: None,
-            cursor_op_as_window: false,
-            start_selection: Pos2::ZERO,
-            last_drawing_point: None,
-            is_selecting: false,
-            remove_selection_after_op: false,
-        }
-    }
-}
-
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)]
@@ -103,8 +65,8 @@ pub struct TarsierApp {
     #[serde(skip)]
     pub(crate) exif: Option<exif::Exif>,
 
-    /// Cursor state
-    pub(crate) cursor_info: CursorState,
+    /// Editor mode
+    pub(crate) mode: Mode,
 
     /// Image infos as windows
     pub(crate) image_info_as_window: bool,
@@ -138,7 +100,7 @@ impl Default for TarsierApp {
             img,
             texture: None,
             exif: None,
-            cursor_info: CursorState::default(),
+            mode: Mode::default(),
             image_info_as_window: false,
             image_operations: ImageOperations::default(),
             save_path: None,
@@ -166,16 +128,16 @@ impl TarsierApp {
 
     /// Cursor ui
     pub(crate) fn cursor_ui(&mut self, ui: &mut egui::Ui) {
-        match self.image_operations.mode.current {
+        match self.mode.current {
             EditMode::Nothing => {
                 ui.label("Doing nothing");
             }
             EditMode::Drawing => {
                 let max_radius = self.img.width().max(self.img.height());
-                self.image_operations.mode.drawing.show(ui, max_radius);
+                self.mode.drawing.show(ui, max_radius);
             }
             EditMode::Selection => {
-                match self.cursor_info.selection {
+                match self.mode.selection.selection {
                     Some(rect) => {
                         let width = rect.width().abs();
                         let height = rect.height().abs();
@@ -188,7 +150,7 @@ impl TarsierApp {
                         ui.label("No selection");
                     }
                 }
-                if let Some(selection) = self.cursor_info.selection {
+                if let Some(selection) = self.mode.selection.selection {
                     let icon_image = Image::new(Self::CROP_ICON);
                     let icon = if ui.ctx().global_style().visuals.dark_mode {
                         icon_image
@@ -212,7 +174,7 @@ impl TarsierApp {
                             self.img
                                 .crop_imm(min_x, min_y, max_x - min_x, max_y - min_y);
                         self.update_image(cropped_img);
-                        self.cursor_info.selection = None;
+                        self.mode.selection.selection = None;
                     }
                 }
             }
@@ -247,8 +209,8 @@ impl TarsierApp {
     /// Post update image
     pub(crate) fn updated_image(&mut self) {
         self.texture = None;
-        if self.cursor_info.remove_selection_after_op {
-            self.cursor_info.selection = None;
+        if self.mode.selection.remove_selection_after_op {
+            self.mode.selection.selection = None;
         }
     }
 }

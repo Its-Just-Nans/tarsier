@@ -1,101 +1,18 @@
 //! Side panel
-use std::{fmt::Display, sync::Arc};
 
 use bladvak::eframe::egui;
 use bladvak::egui_extras::{Column, TableBuilder};
 use bladvak::errors::{AppError, ErrorManager};
 use image::{ColorType, DynamicImage, GenericImage, GenericImageView, Pixel};
+use std::sync::Arc;
 
 use crate::TarsierApp;
 
-/// Drawing mode
-#[derive(serde::Deserialize, serde::Serialize, PartialEq, Debug, Clone, Copy)]
-pub(crate) struct DrawingMode {
-    /// Drawing mode
-    pub drawing_blend: bool,
-    /// Continuous line when drawing when dragged
-    pub drawing_continuous_line: bool,
-    /// Others settings
-    /// Pen radius
-    pub pen_radius: u32,
-    /// Pen color
-    pub(crate) pen_color: [u8; 4],
-}
-
-impl Default for DrawingMode {
-    fn default() -> Self {
-        Self {
-            drawing_blend: false,
-            drawing_continuous_line: true,
-            pen_radius: 1,
-            pen_color: [0, 0, 0, 255],
-        }
-    }
-}
-
-impl DrawingMode {
-    /// Button to draw settings
-    pub(crate) fn show(&mut self, ui: &mut egui::Ui, max_radius: u32) {
-        ui.add(egui::Slider::new(&mut self.pen_radius, 1..=max_radius / 4))
-            .on_hover_text("Pen radius");
-        let [r, g, b, a] = self.pen_color;
-        let mut color = egui::Color32::from_rgba_premultiplied(r, g, b, a);
-        egui::color_picker::color_edit_button_srgba(
-            ui,
-            &mut color,
-            egui::color_picker::Alpha::OnlyBlend,
-        )
-        .on_hover_text("Pen color");
-        self.pen_color = [color.r(), color.g(), color.b(), color.a()];
-        ui.checkbox(&mut self.drawing_blend, "Blend");
-        ui.checkbox(&mut self.drawing_continuous_line, "Continuous line");
-    }
-}
-
-/// Edit mode saved
-#[derive(serde::Deserialize, serde::Serialize, PartialEq, Debug, Clone, Copy)]
-pub(crate) struct SavedEditMode {
-    /// current mode
-    pub(crate) current: EditMode,
-    /// drawing mode save
-    pub(crate) drawing: DrawingMode,
-}
-
-impl Default for SavedEditMode {
-    fn default() -> Self {
-        Self {
-            current: EditMode::Nothing,
-            drawing: DrawingMode::default(),
-        }
-    }
-}
-
-/// Mode
-#[derive(serde::Deserialize, serde::Serialize, PartialEq, Debug, Clone, Copy)]
-pub(crate) enum EditMode {
-    /// Nothing
-    Nothing,
-    /// Selection mode
-    Selection,
-    /// Drawing mode
-    Drawing,
-}
-
-impl Display for EditMode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            EditMode::Nothing => write!(f, "Nothing"),
-            EditMode::Selection => write!(f, "Selection"),
-            EditMode::Drawing => write!(f, "Drawing"),
-        }
-    }
-}
-
 /// Image settings
 #[derive(Debug)]
-pub struct Others {
+pub(crate) struct Others {
     /// Convert to color
-    pub convert_to: ColorType,
+    pub(crate) convert_to: ColorType,
 }
 
 impl Default for Others {
@@ -108,20 +25,18 @@ impl Default for Others {
 
 /// Image opterations settings
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
-pub struct ImageOperations {
+pub(crate) struct ImageOperations {
     /// Blur value
-    pub blur: f32,
+    pub(crate) blur: f32,
     /// Hue rotation value
-    pub hue_rotation: i32,
+    pub(crate) hue_rotation: i32,
     /// Brighten value
-    pub brighten: i32,
+    pub(crate) brighten: i32,
     /// Contrast value
-    pub contrast: f32,
-    /// Editor mode
-    pub mode: SavedEditMode,
+    pub(crate) contrast: f32,
     /// Others
     #[serde(skip)]
-    pub other: Others,
+    pub(crate) other: Others,
 }
 
 impl Default for ImageOperations {
@@ -131,7 +46,6 @@ impl Default for ImageOperations {
             hue_rotation: 50,
             brighten: 50,
             contrast: 1.0,
-            mode: SavedEditMode::default(),
             other: Others {
                 convert_to: ColorType::Rgba8,
             },
@@ -329,7 +243,7 @@ impl TarsierApp {
     where
         F: Fn(&DynamicImage) -> DynamicImage,
     {
-        let current_selection = self.cursor_info.selection.map(|selection| {
+        let current_selection = self.mode.selection.selection.map(|selection| {
             (
                 selection.min.x as u32,
                 selection.min.y as u32,
@@ -360,7 +274,7 @@ impl TarsierApp {
 
     /// Button to show the outline
     #[allow(clippy::similar_names)]
-    pub fn button_outline(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
+    pub(crate) fn button_outline(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
         if ui.button("sobel outline").clicked() {
             self.apply_op(
                 |img| {
@@ -407,7 +321,7 @@ impl TarsierApp {
     /// Draw a point
     #[allow(clippy::cast_sign_loss)]
     pub(crate) fn draw_point(&mut self, x_center: i32, y_center: i32) {
-        let drawing = self.image_operations.mode.drawing;
+        let drawing = self.mode.drawing;
         let radius = i32::try_from(drawing.pen_radius).unwrap_or(10);
         let color = image::Rgba(drawing.pen_color);
         for y in (y_center - radius)..=(y_center + radius) {
