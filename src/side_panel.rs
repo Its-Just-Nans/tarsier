@@ -56,10 +56,17 @@ impl Default for ImageOperations {
 impl TarsierApp {
     /// Image info
     pub(crate) fn image_info(&mut self, ui: &mut egui::Ui) {
+        let Some(document) = self.documents.get_current_doc_mut() else {
+            return;
+        };
         ui.heading("Image Info");
-        ui.label(format!("Size: {}x{}", self.img.width(), self.img.height()));
-        ui.label(format!("Format: {:?}", self.img.color()));
-        match &self.exif {
+        ui.label(format!(
+            "Size: {}x{}",
+            document.img.width(),
+            document.img.height()
+        ));
+        ui.label(format!("Format: {:?}", document.img.color()));
+        match &document.exif {
             Some(exif) => {
                 ui.collapsing("Exif info", |ui| {
                     TableBuilder::new(ui)
@@ -129,20 +136,23 @@ impl TarsierApp {
 
     /// Button for convert
     fn button_convert(&mut self, ui: &mut egui::Ui) {
+        let Some(document) = self.documents.get_current_doc_mut() else {
+            return;
+        };
         ui.label("Convert");
         Self::combo_box_color_type(ui, &mut self.image_operations.other.convert_to);
         if ui.button("Convert").clicked() {
             let new_img = match self.image_operations.other.convert_to {
-                ColorType::L8 => self.img.to_luma8().into(),
-                ColorType::L16 => self.img.to_luma16().into(),
-                ColorType::La8 => self.img.to_luma_alpha8().into(),
-                ColorType::La16 => self.img.to_luma_alpha16().into(),
-                ColorType::Rgb8 => self.img.to_rgb8().into(),
-                ColorType::Rgb16 => self.img.to_rgb16().into(),
-                ColorType::Rgb32F => self.img.to_rgb32f().into(),
-                ColorType::Rgba16 => self.img.to_rgba16().into(),
-                ColorType::Rgba32F => self.img.to_rgba32f().into(),
-                ColorType::Rgba8 | _ => self.img.to_rgba8().into(),
+                ColorType::L8 => document.img.to_luma8().into(),
+                ColorType::L16 => document.img.to_luma16().into(),
+                ColorType::La8 => document.img.to_luma_alpha8().into(),
+                ColorType::La16 => document.img.to_luma_alpha16().into(),
+                ColorType::Rgb8 => document.img.to_rgb8().into(),
+                ColorType::Rgb16 => document.img.to_rgb16().into(),
+                ColorType::Rgb32F => document.img.to_rgb32f().into(),
+                ColorType::Rgba16 => document.img.to_rgba16().into(),
+                ColorType::Rgba32F => document.img.to_rgba32f().into(),
+                ColorType::Rgba8 | _ => document.img.to_rgba8().into(),
             };
             self.update_image(new_img);
         }
@@ -167,8 +177,11 @@ impl TarsierApp {
             );
         }
         ui.separator();
+        let Some(document) = self.documents.get_current_doc_mut() else {
+            return;
+        };
         if ui.button("Grayscale").clicked() {
-            let color = self.img.color();
+            let color = document.img.color();
             self.apply_op(
                 |img| {
                     let inner = img.grayscale();
@@ -243,6 +256,9 @@ impl TarsierApp {
     where
         F: Fn(&DynamicImage) -> DynamicImage,
     {
+        let Some(document) = self.documents.get_current_doc_mut() else {
+            return;
+        };
         let current_selection = self.mode.selection.selection.map(|selection| {
             (
                 selection.min.x as u32,
@@ -252,14 +268,14 @@ impl TarsierApp {
             )
         });
         if let Some(selection) = current_selection {
-            let cropped_img = self.img.crop(
+            let cropped_img = document.img.crop(
                 selection.0,
                 selection.1,
                 selection.2 - selection.0,
                 selection.3 - selection.1,
             );
             let inner = func(&cropped_img);
-            if let Err(e) = self.img.copy_from(&inner, selection.0, selection.1) {
+            if let Err(e) = document.img.copy_from(&inner, selection.0, selection.1) {
                 error_manager.add_error(AppError::new_with_source(
                     "Cannot update selected image part",
                     Arc::new(e),
@@ -267,7 +283,7 @@ impl TarsierApp {
             }
             self.updated_image();
         } else {
-            let new_img = func(&self.img);
+            let new_img = func(&document.img);
             self.update_image(new_img);
         }
     }
@@ -321,6 +337,9 @@ impl TarsierApp {
     /// Draw a point
     #[allow(clippy::cast_sign_loss)]
     pub(crate) fn draw_point(&mut self, x_center: i32, y_center: i32) {
+        let Some(document) = self.documents.get_current_doc_mut() else {
+            return;
+        };
         let drawing = self.mode.drawing;
         let radius = i32::try_from(drawing.pen_radius).unwrap_or(10);
         let color = image::Rgba(drawing.pen_color);
@@ -330,15 +349,15 @@ impl TarsierApp {
                     // Ensure pixel is within bounds
                     if x >= 0
                         && y >= 0
-                        && x < i32::try_from(self.img.width()).unwrap_or(i32::MAX)
-                        && y < i32::try_from(self.img.height()).unwrap_or(i32::MAX)
+                        && x < i32::try_from(document.img.width()).unwrap_or(i32::MAX)
+                        && y < i32::try_from(document.img.height()).unwrap_or(i32::MAX)
                     {
                         if drawing.drawing_blend {
-                            let mut current_pixel = self.img.get_pixel(x as u32, y as u32);
+                            let mut current_pixel = document.img.get_pixel(x as u32, y as u32);
                             current_pixel.blend(&color);
-                            self.img.put_pixel(x as u32, y as u32, current_pixel);
+                            document.img.put_pixel(x as u32, y as u32, current_pixel);
                         } else {
-                            self.img.put_pixel(x as u32, y as u32, color);
+                            document.img.put_pixel(x as u32, y as u32, color);
                         }
                     }
                 }

@@ -7,6 +7,7 @@ use image::ImageFormat;
 use std::path::Path;
 use std::{io::Cursor, path::PathBuf};
 
+use crate::document::Document;
 use crate::{TarsierApp, edit_mode::EditMode};
 
 impl TarsierApp {
@@ -70,11 +71,12 @@ impl TarsierApp {
     pub fn menu_clipboard(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
         ui.menu_button("Clipboard", |ui| {
             if ui.button("Copy").clicked()
+                && let Some(doc) = self.documents.get_current_doc_mut()
                 && let Err(e) = bladvak::utils::set_image_in_clipboard(
                     ui.ctx(),
-                    self.img.width() as usize,
-                    self.img.height() as usize,
-                    self.img.to_rgba8().as_flat_samples().as_slice(),
+                    doc.img.width() as usize,
+                    doc.img.height() as usize,
+                    doc.img.to_rgba8().as_flat_samples().as_slice(),
                 )
             {
                 error_manager.add_error(e);
@@ -112,16 +114,20 @@ impl TarsierApp {
         image_format: ImageFormat,
         error_manager: &mut ErrorManager,
     ) {
-        let current_save_path = self
+        let Some(document) = self.documents.get_current_doc_mut() else {
+            error_manager.add_error("No document to save");
+            return;
+        };
+        let current_save_path = document
             .save_path
             .clone()
             .unwrap_or(PathBuf::from(format!("image.{extension}")));
         let save_path = bladvak::utils::get_save_path(Some(&current_save_path));
         match save_path {
             Ok(save_p) => {
-                self.save_path.clone_from(&save_p);
+                document.save_path.clone_from(&save_p);
                 if let Some(path_to_save) = save_p
-                    && let Err(err) = self.save_image(image_format, &path_to_save)
+                    && let Err(err) = document.save_image(image_format, &path_to_save)
                 {
                     error_manager.add_error(err);
                 }
@@ -149,7 +155,10 @@ impl TarsierApp {
             .on_hover_text("Reset the image to the saved state")
             .clicked()
         {
-            let new_img = self.saved_img.clone();
+            let Some(document) = self.documents.get_current_doc_mut() else {
+                return;
+            };
+            let new_img = document.saved_img.clone();
             self.update_image(new_img);
         }
         let ico_image = Image::new(Self::SAVE_STATE_ICON);
@@ -162,7 +171,10 @@ impl TarsierApp {
             .on_hover_text("Save the current image state")
             .clicked()
         {
-            self.saved_img = self.img.clone();
+            let Some(document) = self.documents.get_current_doc_mut() else {
+                return;
+            };
+            document.saved_img = document.img.clone();
         }
         ui.separator();
 
@@ -274,9 +286,11 @@ impl TarsierApp {
             }
         }
         ui.separator();
-        if ui.button("Copy").clicked() {
-            let size = [self.img.width() as _, self.img.height() as _];
-            let rgb_img = self.img.to_rgba8();
+        if let Some(document) = self.documents.get_current_doc_mut()
+            && ui.button("Copy").clicked()
+        {
+            let size = [document.img.width() as _, document.img.height() as _];
+            let rgb_img = document.img.to_rgba8();
             let pixels = rgb_img.as_flat_samples();
             let color_image = ColorImage::from_rgba_unmultiplied(size, pixels.as_slice());
             ui.ctx().copy_image(color_image);
@@ -284,7 +298,7 @@ impl TarsierApp {
     }
 }
 
-impl TarsierApp {
+impl Document {
     /// Save the current image
     fn save_image(&mut self, format: ImageFormat, path_file: &Path) -> Result<(), String> {
         let mut bytes: Vec<u8> = Vec::new();

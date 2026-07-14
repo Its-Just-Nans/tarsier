@@ -13,9 +13,10 @@ use bladvak::{
 };
 use bladvak::{egui_extras, log};
 use image::{ColorType, DynamicImage, ImageReader};
-use std::{fmt::Debug, io::Cursor, path::PathBuf, sync::Arc};
+use std::{fmt::Debug, io::Cursor, sync::Arc};
 
 use crate::{
+    document::{Document, Documents},
     edit_mode::{EditMode, Mode},
     panels::{CursorInfo, ImageInfo, ImageOperationsPanel},
     side_panel::ImageOperations,
@@ -46,68 +47,45 @@ impl Default for NewImage {
 }
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
 #[serde(default)]
 pub struct TarsierApp {
-    /// Current image
+    /// list of documents
     #[serde(skip)]
-    pub(crate) img: DynamicImage,
-
-    /// Save of the image
-    #[serde(skip)]
-    pub(crate) saved_img: DynamicImage,
-
-    /// Image texture
-    #[serde(skip)]
-    pub(crate) texture: Option<egui::TextureHandle>,
-
-    /// Exif of the image
-    #[serde(skip)]
-    pub(crate) exif: Option<exif::Exif>,
-
+    pub(crate) documents: Documents,
     /// Editor mode
     pub(crate) mode: Mode,
-
     /// Image infos as windows
     pub(crate) image_info_as_window: bool,
-
     /// Image operations panel
     pub(crate) image_operations: ImageOperations,
-
-    /// Path to save the image
-    pub(crate) save_path: Option<PathBuf>,
-
     /// New image settings
     #[serde(skip)]
     pub(crate) new_image: NewImage,
 }
 
-impl Debug for TarsierApp {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut debug_fmt = f.debug_struct("TarsierApp");
-        debug_fmt.finish()
+impl Default for TarsierApp {
+    fn default() -> Self {
+        let (img, _) = TarsierApp::load_default_image();
+        let document = Document {
+            saved_img: img.clone(),
+            img,
+            ..Default::default()
+        };
+        let mut documents = Documents::default();
+        documents.push(document);
+        Self {
+            documents,
+            mode: Mode::default(),
+            image_info_as_window: false,
+            image_operations: ImageOperations::default(),
+            new_image: NewImage::default(),
+        }
     }
 }
 
 /// default image
 const ASSET: &[u8] = include_bytes!("../assets/icon-1024.png");
-
-impl Default for TarsierApp {
-    fn default() -> Self {
-        let (img, _) = Self::load_default_image();
-        Self {
-            saved_img: img.clone(),
-            img,
-            texture: None,
-            exif: None,
-            mode: Mode::default(),
-            image_info_as_window: false,
-            image_operations: ImageOperations::default(),
-            save_path: None,
-            new_image: NewImage::default(),
-        }
-    }
-}
 
 impl TarsierApp {
     /// Load the default image
@@ -128,12 +106,16 @@ impl TarsierApp {
 
     /// Cursor ui
     pub(crate) fn cursor_ui(&mut self, ui: &mut egui::Ui) {
+        let Some(document) = self.documents.get_current_doc_mut() else {
+            ui.label("No document");
+            return;
+        };
         match self.mode.current {
             EditMode::Nothing => {
                 ui.label("Doing nothing");
             }
             EditMode::Drawing => {
-                let max_radius = self.img.width().max(self.img.height());
+                let max_radius = document.img.width().max(document.img.height());
                 self.mode.drawing.show(ui, max_radius);
             }
             EditMode::Selection => {
@@ -171,7 +153,8 @@ impl TarsierApp {
                         let max_x = max_pos.x as u32;
                         let max_y = max_pos.y as u32;
                         let cropped_img =
-                            self.img
+                            document
+                                .img
                                 .crop_imm(min_x, min_y, max_x - min_x, max_y - min_y);
                         self.update_image(cropped_img);
                         self.mode.selection.selection = None;
@@ -183,32 +166,44 @@ impl TarsierApp {
 
     /// Update the image file
     pub(crate) fn update_file(&mut self, new_img: DynamicImage, opt_cursor: Option<Cursor<&[u8]>>) {
-        self.saved_img.clone_from(&new_img);
+        let Some(document) = self.documents.get_current_doc_mut() else {
+            return;
+        };
+        document.saved_img.clone_from(&new_img);
         self.update_image(new_img);
+        let Some(document) = self.documents.get_current_doc_mut() else {
+            return;
+        };
         let exifreader = exif::Reader::new();
         if let Some(bytes) = opt_cursor {
             let mut bufreader = std::io::BufReader::new(bytes);
             match exifreader.read_from_container(&mut bufreader) {
-                Ok(exif) => self.exif = Some(exif),
+                Ok(exif) => document.exif = Some(exif),
                 Err(e) => {
-                    self.exif = None;
+                    document.exif = None;
                     log::info!("Cannot get exif of image: {e}");
                 }
             }
         } else {
-            self.exif = None;
+            document.exif = None;
         }
     }
 
     /// Update image
     pub(crate) fn update_image(&mut self, new_img: DynamicImage) {
-        self.img = new_img;
+        let Some(document) = self.documents.get_current_doc_mut() else {
+            return;
+        };
+        document.img = new_img;
         self.updated_image();
     }
 
     /// Post update image
     pub(crate) fn updated_image(&mut self) {
-        self.texture = None;
+        let Some(document) = self.documents.get_current_doc_mut() else {
+            return;
+        };
+        document.texture = None;
         if self.mode.selection.remove_selection_after_op {
             self.mode.selection.selection = None;
         }
@@ -307,7 +302,9 @@ impl BladvakApp<'_> for TarsierApp {
                     let mut app = saved_state;
                     let cursor_data = Cursor::new(bytes.as_ref());
                     app.update_file(img, Some(cursor_data));
-                    app.save_path = Some(absolute_path);
+                    if let Some(document) = app.documents.get_current_doc_mut() {
+                        document.save_path = Some(absolute_path);
+                    }
                     Ok(app)
                 }
                 Err(e) => {

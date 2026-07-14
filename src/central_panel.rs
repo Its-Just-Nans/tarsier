@@ -18,9 +18,12 @@ impl TarsierApp {
         _error_manager: &mut ErrorManager,
     ) {
         egui::ScrollArea::both().show_viewport(ui, |ui, viewport| {
-            let size = [self.img.width() as _, self.img.height() as _];
-            let image_texture = self.texture.get_or_insert_with(|| {
-                let image_buffer = self.img.to_rgba8();
+            let Some(document) = self.documents.get_current_doc_mut() else {
+                return;
+            };
+            let size = [document.img.width() as _, document.img.height() as _];
+            let image_texture = document.texture.get_or_insert_with(|| {
+                let image_buffer = document.img.to_rgba8();
                 let pixels = image_buffer.as_flat_samples();
                 let image = ColorImage::from_rgba_unmultiplied(size, pixels.as_slice());
                 ui.ctx().load_texture(
