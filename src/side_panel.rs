@@ -8,9 +8,71 @@ use image::{ColorType, DynamicImage, GenericImage, GenericImageView, Pixel};
 
 use crate::TarsierApp;
 
+/// Drawing mode
+#[derive(serde::Deserialize, serde::Serialize, PartialEq, Debug, Clone, Copy)]
+pub(crate) struct DrawingMode {
+    /// Drawing mode
+    pub drawing_blend: bool,
+    /// Continuous line when drawing when dragged
+    pub drawing_continuous_line: bool,
+    /// Others settings
+    /// Pen radius
+    pub pen_radius: u32,
+    /// Pen color
+    pub(crate) pen_color: [u8; 4],
+}
+
+impl Default for DrawingMode {
+    fn default() -> Self {
+        Self {
+            drawing_blend: false,
+            drawing_continuous_line: true,
+            pen_radius: 1,
+            pen_color: [0, 0, 0, 255],
+        }
+    }
+}
+
+impl DrawingMode {
+    /// Button to draw settings
+    pub(crate) fn show(&mut self, ui: &mut egui::Ui, max_radius: u32) {
+        ui.add(egui::Slider::new(&mut self.pen_radius, 1..=max_radius / 4))
+            .on_hover_text("Pen radius");
+        let [r, g, b, a] = self.pen_color;
+        let mut color = egui::Color32::from_rgba_premultiplied(r, g, b, a);
+        egui::color_picker::color_edit_button_srgba(
+            ui,
+            &mut color,
+            egui::color_picker::Alpha::OnlyBlend,
+        )
+        .on_hover_text("Pen color");
+        self.pen_color = [color.r(), color.g(), color.b(), color.a()];
+        ui.checkbox(&mut self.drawing_blend, "Blend");
+        ui.checkbox(&mut self.drawing_continuous_line, "Continuous line");
+    }
+}
+
+/// Edit mode saved
+#[derive(serde::Deserialize, serde::Serialize, PartialEq, Debug, Clone, Copy)]
+pub(crate) struct SavedEditMode {
+    /// current mode
+    pub(crate) current: EditMode,
+    /// drawing mode save
+    pub(crate) drawing: DrawingMode,
+}
+
+impl Default for SavedEditMode {
+    fn default() -> Self {
+        Self {
+            current: EditMode::Nothing,
+            drawing: DrawingMode::default(),
+        }
+    }
+}
+
 /// Mode
 #[derive(serde::Deserialize, serde::Serialize, PartialEq, Debug, Clone, Copy)]
-pub enum EditMode {
+pub(crate) enum EditMode {
     /// Nothing
     Nothing,
     /// Selection mode
@@ -55,17 +117,9 @@ pub struct ImageOperations {
     pub brighten: i32,
     /// Contrast value
     pub contrast: f32,
-    /// Pen radius
-    pub pen_radius: u32,
-    /// Pen color
-    pub pen_color: [u8; 4],
     /// Editor mode
-    pub mode: EditMode,
-    /// Drawing mode
-    pub drawing_blend: bool,
-    /// Continuous line when drawing when dragged
-    pub drawing_continuous_line: bool,
-    /// Others settings
+    pub mode: SavedEditMode,
+    /// Others
     #[serde(skip)]
     pub other: Others,
 }
@@ -77,11 +131,7 @@ impl Default for ImageOperations {
             hue_rotation: 50,
             brighten: 50,
             contrast: 1.0,
-            pen_radius: 1,
-            pen_color: [0, 0, 0, 255],
-            mode: EditMode::Selection,
-            drawing_blend: false,
-            drawing_continuous_line: true,
+            mode: SavedEditMode::default(),
             other: Others {
                 convert_to: ColorType::Rgba8,
             },
@@ -308,30 +358,6 @@ impl TarsierApp {
         }
     }
 
-    /// Button to draw settings
-    pub fn button_drawing(&mut self, ui: &mut egui::Ui) {
-        let max_radius = self.img.width().max(self.img.height());
-        ui.add(egui::Slider::new(
-            &mut self.image_operations.pen_radius,
-            1..=max_radius / 4,
-        ))
-        .on_hover_text("Pen radius");
-        let [r, g, b, a] = self.image_operations.pen_color;
-        let mut color = egui::Color32::from_rgba_premultiplied(r, g, b, a);
-        egui::color_picker::color_edit_button_srgba(
-            ui,
-            &mut color,
-            egui::color_picker::Alpha::OnlyBlend,
-        )
-        .on_hover_text("Pen color");
-        self.image_operations.pen_color = [color.r(), color.g(), color.b(), color.a()];
-        ui.checkbox(&mut self.image_operations.drawing_blend, "Blend");
-        ui.checkbox(
-            &mut self.image_operations.drawing_continuous_line,
-            "Continuous line",
-        );
-    }
-
     /// Button to show the outline
     #[allow(clippy::similar_names)]
     pub fn button_outline(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
@@ -380,9 +406,10 @@ impl TarsierApp {
 
     /// Draw a point
     #[allow(clippy::cast_sign_loss)]
-    pub fn draw_point(&mut self, x_center: i32, y_center: i32) {
-        let radius = i32::try_from(self.image_operations.pen_radius).unwrap_or(10);
-        let color = image::Rgba(self.image_operations.pen_color);
+    pub(crate) fn draw_point(&mut self, x_center: i32, y_center: i32) {
+        let drawing = self.image_operations.mode.drawing;
+        let radius = i32::try_from(drawing.pen_radius).unwrap_or(10);
+        let color = image::Rgba(drawing.pen_color);
         for y in (y_center - radius)..=(y_center + radius) {
             for x in (x_center - radius)..=(x_center + radius) {
                 if (x - x_center).pow(2) + (y - y_center).pow(2) <= radius.pow(2) {
@@ -392,7 +419,7 @@ impl TarsierApp {
                         && x < i32::try_from(self.img.width()).unwrap_or(i32::MAX)
                         && y < i32::try_from(self.img.height()).unwrap_or(i32::MAX)
                     {
-                        if self.image_operations.drawing_blend {
+                        if drawing.drawing_blend {
                             let mut current_pixel = self.img.get_pixel(x as u32, y as u32);
                             current_pixel.blend(&color);
                             self.img.put_pixel(x as u32, y as u32, current_pixel);

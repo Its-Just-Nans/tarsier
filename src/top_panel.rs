@@ -239,7 +239,7 @@ impl TarsierApp {
             },
         );
         job.append(
-            &format!("{}", self.image_operations.mode),
+            &format!("{}", self.image_operations.mode.current),
             0.0,
             TextFormat {
                 color: default_color,
@@ -248,25 +248,25 @@ impl TarsierApp {
             },
         );
         ui.menu_button(job, |ui| {
-            let previous_state = self.image_operations.mode;
+            let previous_state = self.image_operations.mode.current;
             ui.selectable_value(
-                &mut self.image_operations.mode,
+                &mut self.image_operations.mode.current,
                 EditMode::Nothing,
                 "Nothing",
             );
             ui.selectable_value(
-                &mut self.image_operations.mode,
+                &mut self.image_operations.mode.current,
                 EditMode::Selection,
                 "Selection",
             );
             ui.selectable_value(
-                &mut self.image_operations.mode,
+                &mut self.image_operations.mode.current,
                 EditMode::Drawing,
                 "Drawing",
             );
-            if self.image_operations.mode != previous_state {
+            if self.image_operations.mode.current != previous_state {
                 ui.close();
-                if self.image_operations.mode != EditMode::Selection {
+                if self.image_operations.mode.current != EditMode::Selection {
                     self.cursor_info.selection = None;
                 }
             }

@@ -166,12 +166,13 @@ impl TarsierApp {
 
     /// Cursor ui
     pub(crate) fn cursor_ui(&mut self, ui: &mut egui::Ui) {
-        match self.image_operations.mode {
+        match self.image_operations.mode.current {
             EditMode::Nothing => {
                 ui.label("Doing nothing");
             }
             EditMode::Drawing => {
-                self.button_drawing(ui);
+                let max_radius = self.img.width().max(self.img.height());
+                self.image_operations.mode.drawing.show(ui, max_radius);
             }
             EditMode::Selection => {
                 match self.cursor_info.selection {
@@ -326,6 +327,7 @@ impl BladvakApp<'_> for TarsierApp {
         saved_state: Self,
         cc: &CreationContext<'_>,
         args: &[String],
+        _error_manager: &mut ErrorManager,
     ) -> Result<Self, AppError> {
         // This is also where you can customize the look and feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.

@@ -39,12 +39,12 @@ impl TarsierApp {
 
             let painter = ui.painter();
 
-            if matches!(self.image_operations.mode, EditMode::Drawing)
+            if let EditMode::Drawing = self.image_operations.mode.current
                 && let Some(pos) = ui.ctx().input(|i| i.pointer.clone()).latest_pos()
             {
                 painter.circle(
                     pos,
-                    self.image_operations.pen_radius as f32,
+                    self.image_operations.mode.drawing.pen_radius as f32,
                     Color32::TRANSPARENT,
                     egui::Stroke::new(1.0, Color32::BLACK),
                 );
@@ -60,7 +60,7 @@ impl TarsierApp {
                         pos.x.round().clamp(0.0, size[0] as f32),
                         pos.y.round().clamp(0.0, size[1] as f32),
                     );
-                    match self.image_operations.mode {
+                    match self.image_operations.mode.current {
                         EditMode::Nothing => {
                             // no nothing
                         }
@@ -79,7 +79,7 @@ impl TarsierApp {
                         }
                         EditMode::Drawing => {
                             #[allow(clippy::cast_possible_truncation)]
-                            if self.image_operations.drawing_continuous_line
+                            if self.image_operations.mode.drawing.drawing_continuous_line
                                 && let Some(last_post) = self.cursor_info.last_drawing_point
                             {
                                 let pts = points_between(last_post, correct_pos);
@@ -99,7 +99,7 @@ impl TarsierApp {
             }
             if response.clicked() {
                 self.cursor_info.selection = None;
-                match self.image_operations.mode {
+                match self.image_operations.mode.current {
                     EditMode::Nothing => {
                         // do nothing
                     }
