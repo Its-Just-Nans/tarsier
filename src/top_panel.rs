@@ -251,6 +251,11 @@ impl TarsierApp {
             let previous_state = self.image_operations.mode;
             ui.selectable_value(
                 &mut self.image_operations.mode,
+                EditMode::Nothing,
+                "Nothing",
+            );
+            ui.selectable_value(
+                &mut self.image_operations.mode,
                 EditMode::Selection,
                 "Selection",
             );
@@ -261,7 +266,7 @@ impl TarsierApp {
             );
             if self.image_operations.mode != previous_state {
                 ui.close();
-                if self.image_operations.mode == EditMode::Drawing {
+                if self.image_operations.mode != EditMode::Selection {
                     self.cursor_info.selection = None;
                 }
             }

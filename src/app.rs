@@ -166,47 +166,53 @@ impl TarsierApp {
 
     /// Cursor ui
     pub(crate) fn cursor_ui(&mut self, ui: &mut egui::Ui) {
-        if self.image_operations.mode == EditMode::Drawing {
-            self.button_drawing(ui);
-        } else {
-            match self.cursor_info.selection {
-                Some(rect) => {
-                    let width = rect.width().abs();
-                    let height = rect.height().abs();
-                    ui.label(format!("Width: {width:.0}"));
-                    ui.label(format!("Height: {height:.0}"));
-                    ui.label(format!("Min: {:?}", rect.left_top()));
-                    ui.label(format!("Max: {:?}", rect.right_bottom()));
-                }
-                None => {
-                    ui.label("No selection");
-                }
+        match self.image_operations.mode {
+            EditMode::Nothing => {
+                ui.label("Doing nothing");
             }
-            if let Some(selection) = self.cursor_info.selection {
-                let icon_image = Image::new(Self::CROP_ICON);
-                let icon = if ui.ctx().global_style().visuals.dark_mode {
-                    icon_image
-                } else {
-                    icon_image.tint(Color32::BLACK)
-                };
-                #[allow(clippy::cast_sign_loss)]
-                #[allow(clippy::cast_possible_truncation)]
-                if ui
-                    .add(egui::Button::image_and_text(icon, "Crop"))
-                    .on_hover_text("Crop the image")
-                    .clicked()
-                {
-                    let min_pos = selection.min;
-                    let max_pos = selection.max;
-                    let min_x = min_pos.x as u32;
-                    let min_y = min_pos.y as u32;
-                    let max_x = max_pos.x as u32;
-                    let max_y = max_pos.y as u32;
-                    let cropped_img = self
-                        .img
-                        .crop_imm(min_x, min_y, max_x - min_x, max_y - min_y);
-                    self.update_image(cropped_img);
-                    self.cursor_info.selection = None;
+            EditMode::Drawing => {
+                self.button_drawing(ui);
+            }
+            EditMode::Selection => {
+                match self.cursor_info.selection {
+                    Some(rect) => {
+                        let width = rect.width().abs();
+                        let height = rect.height().abs();
+                        ui.label(format!("Width: {width:.0}"));
+                        ui.label(format!("Height: {height:.0}"));
+                        ui.label(format!("Min: {:?}", rect.left_top()));
+                        ui.label(format!("Max: {:?}", rect.right_bottom()));
+                    }
+                    None => {
+                        ui.label("No selection");
+                    }
+                }
+                if let Some(selection) = self.cursor_info.selection {
+                    let icon_image = Image::new(Self::CROP_ICON);
+                    let icon = if ui.ctx().global_style().visuals.dark_mode {
+                        icon_image
+                    } else {
+                        icon_image.tint(Color32::BLACK)
+                    };
+                    #[allow(clippy::cast_sign_loss)]
+                    #[allow(clippy::cast_possible_truncation)]
+                    if ui
+                        .add(egui::Button::image_and_text(icon, "Crop"))
+                        .on_hover_text("Crop the image")
+                        .clicked()
+                    {
+                        let min_pos = selection.min;
+                        let max_pos = selection.max;
+                        let min_x = min_pos.x as u32;
+                        let min_y = min_pos.y as u32;
+                        let max_x = max_pos.x as u32;
+                        let max_y = max_pos.y as u32;
+                        let cropped_img =
+                            self.img
+                                .crop_imm(min_x, min_y, max_x - min_x, max_y - min_y);
+                        self.update_image(cropped_img);
+                        self.cursor_info.selection = None;
+                    }
                 }
             }
         }

@@ -61,6 +61,9 @@ impl TarsierApp {
                         pos.y.round().clamp(0.0, size[1] as f32),
                     );
                     match self.image_operations.mode {
+                        EditMode::Nothing => {
+                            // no nothing
+                        }
                         EditMode::Selection => {
                             self.cursor_info.selection =
                                 if let Some(_rect) = self.cursor_info.selection {
@@ -97,6 +100,9 @@ impl TarsierApp {
             if response.clicked() {
                 self.cursor_info.selection = None;
                 match self.image_operations.mode {
+                    EditMode::Nothing => {
+                        // do nothing
+                    }
                     EditMode::Selection => {
                         self.cursor_info.selection = None;
                     }

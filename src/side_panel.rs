@@ -11,6 +11,8 @@ use crate::TarsierApp;
 /// Mode
 #[derive(serde::Deserialize, serde::Serialize, PartialEq, Debug, Clone, Copy)]
 pub enum EditMode {
+    /// Nothing
+    Nothing,
     /// Selection mode
     Selection,
     /// Drawing mode
@@ -20,6 +22,7 @@ pub enum EditMode {
 impl Display for EditMode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            EditMode::Nothing => write!(f, "Nothing"),
             EditMode::Selection => write!(f, "Selection"),
             EditMode::Drawing => write!(f, "Drawing"),
         }
