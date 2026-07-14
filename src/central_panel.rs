@@ -75,7 +75,7 @@ impl TarsierApp {
                         pos.y.round().clamp(0.0, size[1] as f32),
                     );
                     match self.mode.current {
-                        EditMode::Nothing => {
+                        EditMode::Cursor => {
                             // no nothing
                         }
                         EditMode::Selection => {
@@ -120,7 +120,7 @@ impl TarsierApp {
             if response.clicked() {
                 document.selection.rectangle = None;
                 match self.mode.current {
-                    EditMode::Nothing => {
+                    EditMode::Cursor => {
                         // do nothing
                     }
                     EditMode::Selection => {

@@ -58,7 +58,7 @@ pub(crate) struct Mode {
 impl Default for Mode {
     fn default() -> Self {
         Self {
-            current: EditMode::Nothing,
+            current: EditMode::Cursor,
             drawing: DrawingMode::default(),
         }
     }
@@ -67,8 +67,8 @@ impl Default for Mode {
 /// Mode
 #[derive(serde::Deserialize, serde::Serialize, PartialEq, Debug, Clone, Copy)]
 pub(crate) enum EditMode {
-    /// Nothing
-    Nothing,
+    /// Cursor
+    Cursor,
     /// Selection mode
     Selection,
     /// Drawing mode
@@ -78,7 +78,7 @@ pub(crate) enum EditMode {
 impl std::fmt::Display for EditMode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            EditMode::Nothing => write!(f, "Nothing"),
+            EditMode::Cursor => write!(f, "Cursor"),
             EditMode::Selection => write!(f, "Selection"),
             EditMode::Drawing => write!(f, "Drawing"),
         }

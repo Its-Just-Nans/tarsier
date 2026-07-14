@@ -119,7 +119,7 @@ impl TarsierApp {
             return;
         };
         match self.mode.current {
-            EditMode::Nothing => {
+            EditMode::Cursor => {
                 ui.label("Doing nothing");
             }
             EditMode::Drawing => {

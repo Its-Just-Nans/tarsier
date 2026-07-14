@@ -246,7 +246,7 @@ impl TarsierApp {
         };
         let mut job = LayoutJob::default();
         job.append(
-            "Cursor ",
+            "Mode ",
             0.0,
             TextFormat {
                 color: default_color,
@@ -264,7 +264,7 @@ impl TarsierApp {
         );
         ui.menu_button(job, |ui| {
             let previous_state = self.mode.current;
-            ui.selectable_value(&mut self.mode.current, EditMode::Nothing, "Nothing");
+            ui.selectable_value(&mut self.mode.current, EditMode::Cursor, "Cursor");
             ui.selectable_value(&mut self.mode.current, EditMode::Selection, "Selection");
             ui.selectable_value(&mut self.mode.current, EditMode::Drawing, "Drawing");
             if self.mode.current != previous_state {
