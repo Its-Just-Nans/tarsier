@@ -5,6 +5,8 @@ use std::path::PathBuf;
 use bladvak::eframe::egui;
 use image::DynamicImage;
 
+use crate::edit_mode::SelectionState;
+
 /// Document for one image
 #[derive(serde::Deserialize, serde::Serialize, Default)]
 pub(crate) struct Document {
@@ -22,11 +24,16 @@ pub(crate) struct Document {
     pub(crate) exif: Option<exif::Exif>,
     /// Path to save the image
     pub(crate) save_path: Option<PathBuf>,
+    /// selection
+    pub(crate) selection: SelectionState,
 }
 
 impl std::fmt::Debug for Document {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Document").finish()
+        f.debug_struct("Document")
+            .field("save_path", &self.save_path)
+            .field("selection", &self.selection)
+            .finish_non_exhaustive()
     }
 }
 

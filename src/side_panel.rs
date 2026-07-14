@@ -259,7 +259,7 @@ impl TarsierApp {
         let Some(document) = self.documents.get_current_doc_mut() else {
             return;
         };
-        let current_selection = self.mode.selection.selection.map(|selection| {
+        let current_selection = document.selection.rectangle.map(|selection| {
             (
                 selection.min.x as u32,
                 selection.min.y as u32,

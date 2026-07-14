@@ -46,6 +46,18 @@ impl Default for NewImage {
     }
 }
 
+/// App settings
+#[derive(serde::Deserialize, serde::Serialize, Debug, Default)]
+pub(crate) struct AppSettings {
+    /// remove selection
+    pub(crate) remove_selection_after_op: bool,
+    /// Image infos as windows
+    pub(crate) image_info_as_window: bool,
+    /// New image settings
+    #[serde(skip)]
+    pub(crate) new_image: NewImage,
+}
+
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
 #[serde(default)]
@@ -55,13 +67,10 @@ pub struct TarsierApp {
     pub(crate) documents: Documents,
     /// Editor mode
     pub(crate) mode: Mode,
-    /// Image infos as windows
-    pub(crate) image_info_as_window: bool,
+    /// settings
+    pub(crate) settings: AppSettings,
     /// Image operations panel
     pub(crate) image_operations: ImageOperations,
-    /// New image settings
-    #[serde(skip)]
-    pub(crate) new_image: NewImage,
 }
 
 impl Default for TarsierApp {
@@ -77,9 +86,8 @@ impl Default for TarsierApp {
         Self {
             documents,
             mode: Mode::default(),
-            image_info_as_window: false,
             image_operations: ImageOperations::default(),
-            new_image: NewImage::default(),
+            settings: AppSettings::default(),
         }
     }
 }
@@ -119,7 +127,7 @@ impl TarsierApp {
                 self.mode.drawing.show(ui, max_radius);
             }
             EditMode::Selection => {
-                match self.mode.selection.selection {
+                match document.selection.rectangle {
                     Some(rect) => {
                         let width = rect.width().abs();
                         let height = rect.height().abs();
@@ -132,7 +140,7 @@ impl TarsierApp {
                         ui.label("No selection");
                     }
                 }
-                if let Some(selection) = self.mode.selection.selection {
+                if let Some(selection) = document.selection.rectangle {
                     let icon_image = Image::new(Self::CROP_ICON);
                     let icon = if ui.ctx().global_style().visuals.dark_mode {
                         icon_image
@@ -157,7 +165,9 @@ impl TarsierApp {
                                 .img
                                 .crop_imm(min_x, min_y, max_x - min_x, max_y - min_y);
                         self.update_image(cropped_img);
-                        self.mode.selection.selection = None;
+                        if let Some(document) = self.documents.get_current_doc_mut() {
+                            document.selection.rectangle = None;
+                        }
                     }
                 }
             }
@@ -204,8 +214,8 @@ impl TarsierApp {
             return;
         };
         document.texture = None;
-        if self.mode.selection.remove_selection_after_op {
-            self.mode.selection.selection = None;
+        if self.settings.remove_selection_after_op {
+            document.selection.rectangle = None;
         }
     }
 }

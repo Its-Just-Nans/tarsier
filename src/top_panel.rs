@@ -27,7 +27,7 @@ impl TarsierApp {
     /// Show the file menu
     pub(crate) fn app_menu_file(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
         if ui.button("New").clicked() {
-            self.new_image.is_open = true;
+            self.settings.new_image.is_open = true;
             ui.close();
         }
         self.menu_clipboard(ui, error_manager);
@@ -235,6 +235,9 @@ impl TarsierApp {
         let is_dark_theme = ui.ctx().global_style().visuals.dark_mode;
         ui.separator();
         self.top_panel_operations(ui, error_manager, is_dark_theme);
+        let Some(document) = self.documents.get_current_doc_mut() else {
+            return;
+        };
         ui.separator();
         let (default_color, background_color) = if ui.visuals().dark_mode {
             (Color32::LIGHT_GRAY, Color32::DARK_BLUE)
@@ -267,11 +270,11 @@ impl TarsierApp {
             if self.mode.current != previous_state {
                 ui.close();
                 if self.mode.current != EditMode::Selection {
-                    self.mode.selection.selection = None;
+                    document.selection.rectangle = None;
                 }
             }
         });
-        if let Some(selection) = self.mode.selection.selection {
+        if let Some(selection) = document.selection.rectangle {
             ui.separator();
             if ui
                 .label(format!(
@@ -282,7 +285,7 @@ impl TarsierApp {
                 .on_hover_text("Click to clear selection")
                 .clicked()
             {
-                self.mode.selection.selection = None;
+                document.selection.rectangle = None;
             }
         }
         ui.separator();

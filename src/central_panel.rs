@@ -17,6 +17,17 @@ impl TarsierApp {
         ui: &mut egui::Ui,
         _error_manager: &mut ErrorManager,
     ) {
+        if self.documents.get_current_doc_mut().is_none() {
+            egui::Area::new("center".into())
+                .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
+                .show(ui.ctx(), |ui| {
+                    ui.vertical_centered(|ui| {
+                        ui.heading(concat!("Welcome to ", env!("CARGO_PKG_NAME")));
+                        ui.label("No document opened");
+                    });
+                });
+            return;
+        }
         egui::ScrollArea::both().show_viewport(ui, |ui, viewport| {
             let Some(document) = self.documents.get_current_doc_mut() else {
                 return;
@@ -55,8 +66,8 @@ impl TarsierApp {
 
             if response.dragged() {
                 if let Some(pos) = response.interact_pointer_pos() {
-                    if !self.mode.selection.is_selecting {
-                        self.mode.selection.selection = None;
+                    if !document.selection.is_selecting {
+                        document.selection.rectangle = None;
                     }
                     let pos = pos - Vec2::new(ecart_x - viewport.min.x, ecart_y - viewport.min.y);
                     let correct_pos = Pos2::new(
@@ -68,22 +79,22 @@ impl TarsierApp {
                             // no nothing
                         }
                         EditMode::Selection => {
-                            self.mode.selection.selection =
-                                if let Some(_rect) = self.mode.selection.selection {
+                            document.selection.rectangle =
+                                if let Some(_rect) = document.selection.rectangle {
                                     Some(egui::Rect::from_two_pos(
-                                        self.mode.selection.start_selection,
+                                        document.selection.start_selection,
                                         correct_pos,
                                     ))
                                 } else {
-                                    self.mode.selection.start_selection = correct_pos;
+                                    document.selection.start_selection = correct_pos;
                                     Some(egui::Rect::from_two_pos(correct_pos, correct_pos))
                                 };
-                            self.mode.selection.is_selecting = true;
+                            document.selection.is_selecting = true;
                         }
                         EditMode::Drawing => {
                             #[allow(clippy::cast_possible_truncation)]
                             if self.mode.drawing.drawing_continuous_line
-                                && let Some(last_post) = self.mode.selection.last_drawing_point
+                                && let Some(last_post) = document.selection.last_drawing_point
                             {
                                 let pts = points_between(last_post, correct_pos);
                                 for p in pts {
@@ -92,22 +103,28 @@ impl TarsierApp {
                             } else {
                                 self.draw_point(correct_pos.x as i32, correct_pos.y as i32);
                             }
-                            self.mode.selection.last_drawing_point = Some(correct_pos);
+                            if let Some(document) = self.documents.get_current_doc_mut() {
+                                document.selection.last_drawing_point = Some(correct_pos);
+                            }
                         }
                     }
                 }
             } else {
-                self.mode.selection.is_selecting = false;
-                self.mode.selection.last_drawing_point = None;
+                document.selection.is_selecting = false;
+                document.selection.last_drawing_point = None;
             }
+            let Some(document) = self.documents.get_current_doc_mut() else {
+                return;
+            };
+
             if response.clicked() {
-                self.mode.selection.selection = None;
+                document.selection.rectangle = None;
                 match self.mode.current {
                     EditMode::Nothing => {
                         // do nothing
                     }
                     EditMode::Selection => {
-                        self.mode.selection.selection = None;
+                        document.selection.rectangle = None;
                     }
                     EditMode::Drawing => {
                         if let Some(pos) = response.interact_pointer_pos() {
@@ -119,12 +136,17 @@ impl TarsierApp {
                             );
                             #[allow(clippy::cast_possible_truncation)]
                             self.draw_point(correct_pos.x as i32, correct_pos.y as i32);
-                            self.mode.selection.last_drawing_point = None;
+                            if let Some(document) = self.documents.get_current_doc_mut() {
+                                document.selection.last_drawing_point = None;
+                            }
                         }
                     }
                 }
             }
-            if let Some(selection) = self.mode.selection.selection {
+            let Some(document) = self.documents.get_current_doc_mut() else {
+                return;
+            };
+            if let Some(selection) = document.selection.rectangle {
                 let min_pos = img_position.min;
                 let rect_selection = egui::Rect::from_two_pos(
                     Pos2::new(
@@ -181,19 +203,23 @@ impl TarsierApp {
             }
         });
 
-        if self.new_image.is_open {
+        if self.settings.new_image.is_open {
             let modal = Modal::new(Id::new("Modal new image")).show(ui.ctx(), |ui| {
                 ui.label("Create a new image");
                 ui.horizontal(|ui| {
                     ui.label("Width");
-                    ui.add(egui::DragValue::new(&mut self.new_image.width).range(1..=4000));
+                    ui.add(
+                        egui::DragValue::new(&mut self.settings.new_image.width).range(1..=4000),
+                    );
                 });
                 ui.horizontal(|ui| {
                     ui.label("Height");
-                    ui.add(egui::DragValue::new(&mut self.new_image.height).range(1..=4000));
+                    ui.add(
+                        egui::DragValue::new(&mut self.settings.new_image.height).range(1..=4000),
+                    );
                 });
                 ui.label("Color type");
-                Self::combo_box_color_type(ui, &mut self.new_image.color_type);
+                Self::combo_box_color_type(ui, &mut self.settings.new_image.color_type);
                 egui::Sides::new().show(
                     ui,
                     |modal_ui| {
@@ -204,9 +230,9 @@ impl TarsierApp {
                     |modal_ui| {
                         if modal_ui.button("Create").clicked() {
                             let new_img = DynamicImage::new(
-                                self.new_image.width,
-                                self.new_image.height,
-                                self.new_image.color_type,
+                                self.settings.new_image.width,
+                                self.settings.new_image.height,
+                                self.settings.new_image.color_type,
                             );
                             self.update_file(new_img, None);
                             modal_ui.close();
@@ -215,7 +241,7 @@ impl TarsierApp {
                 );
             });
             if modal.should_close() {
-                self.new_image.is_open = false;
+                self.settings.new_image.is_open = false;
             }
         }
     }

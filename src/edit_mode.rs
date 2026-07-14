@@ -53,8 +53,6 @@ pub(crate) struct Mode {
     pub(crate) current: EditMode,
     /// drawing mode
     pub(crate) drawing: DrawingMode,
-    /// selection mode
-    pub(crate) selection: SelectionState,
 }
 
 impl Default for Mode {
@@ -62,7 +60,6 @@ impl Default for Mode {
         Self {
             current: EditMode::Nothing,
             drawing: DrawingMode::default(),
-            selection: SelectionState::default(),
         }
     }
 }
@@ -93,7 +90,7 @@ impl std::fmt::Display for EditMode {
 pub struct SelectionState {
     /// Selection rectangle
     #[serde(skip)]
-    pub selection: Option<egui::Rect>,
+    pub rectangle: Option<egui::Rect>,
 
     /// Start selection position
     #[serde(skip)]
@@ -117,7 +114,7 @@ pub struct SelectionState {
 impl Default for SelectionState {
     fn default() -> Self {
         Self {
-            selection: None,
+            rectangle: None,
             cursor_op_as_window: false,
             start_selection: egui::Pos2::ZERO,
             last_drawing_point: None,
