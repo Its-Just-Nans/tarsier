@@ -1,6 +1,6 @@
 //! Top panel
 use bladvak::eframe::egui::{
-    self, Color32, ColorImage, Image, ImageSource, TextFormat, include_image, text::LayoutJob,
+    self, Color32, Image, ImageSource, TextFormat, include_image, text::LayoutJob,
 };
 use bladvak::errors::ErrorManager;
 use image::ImageFormat;
@@ -71,12 +71,12 @@ impl TarsierApp {
     pub fn menu_clipboard(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
         ui.menu_button("Clipboard", |ui| {
             if ui.button("Copy").clicked()
-                && let Some(doc) = self.documents.get_current_doc_mut()
+                && let Some(document) = self.documents.get_current_doc_mut()
                 && let Err(e) = bladvak::utils::set_image_in_clipboard(
                     ui.ctx(),
-                    doc.img.width() as usize,
-                    doc.img.height() as usize,
-                    doc.img.to_rgba8().as_flat_samples().as_slice(),
+                    document.img.width() as usize,
+                    document.img.height() as usize,
+                    document.img.to_rgba8().as_flat_samples().as_slice(),
                 )
             {
                 error_manager.add_error(e);
@@ -289,15 +289,7 @@ impl TarsierApp {
             }
         }
         ui.separator();
-        if let Some(document) = self.documents.get_current_doc_mut()
-            && ui.button("Copy").clicked()
-        {
-            let size = [document.img.width() as _, document.img.height() as _];
-            let rgb_img = document.img.to_rgba8();
-            let pixels = rgb_img.as_flat_samples();
-            let color_image = ColorImage::from_rgba_unmultiplied(size, pixels.as_slice());
-            ui.ctx().copy_image(color_image);
-        }
+        // TODO show documents
     }
 }
 

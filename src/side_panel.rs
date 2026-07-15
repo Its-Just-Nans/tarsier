@@ -55,7 +55,11 @@ impl Default for ImageOperations {
 
 impl TarsierApp {
     /// Image info
-    pub(crate) fn image_info(&mut self, ui: &mut egui::Ui) {
+    pub(crate) fn image_info(
+        &mut self,
+        ui: &mut egui::Ui,
+        error_manager: &mut bladvak::ErrorManager,
+    ) {
         let Some(document) = self.documents.get_current_doc_mut() else {
             return;
         };
@@ -109,6 +113,17 @@ impl TarsierApp {
             None => {
                 ui.label("No exif detected");
             }
+        }
+        if let Some(document) = self.documents.get_current_doc_mut()
+            && ui.button("Copy image").clicked()
+            && let Err(e) = bladvak::utils::set_image_in_clipboard(
+                ui.ctx(),
+                document.img.width() as usize,
+                document.img.height() as usize,
+                document.img.to_rgba8().as_flat_samples().as_slice(),
+            )
+        {
+            error_manager.add_error(e);
         }
     }
 

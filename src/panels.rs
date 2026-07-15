@@ -75,9 +75,9 @@ impl BladvakPanel for ImageInfo {
         &self,
         app: &mut Self::App,
         ui: &mut egui::Ui,
-        _error_manager: &mut bladvak::ErrorManager,
+        error_manager: &mut bladvak::ErrorManager,
     ) {
-        app.image_info(ui);
+        app.image_info(ui, error_manager);
     }
 }
 
