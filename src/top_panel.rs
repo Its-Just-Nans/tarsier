@@ -1,29 +1,14 @@
 //! Top panel
-use bladvak::eframe::egui::{
-    self, Color32, Image, ImageSource, TextFormat, include_image, text::LayoutJob,
-};
+use bladvak::eframe::egui::{self, Color32, TextFormat, text::LayoutJob};
 use bladvak::errors::ErrorManager;
 use image::ImageFormat;
+use std::io::Cursor;
 use std::path::Path;
-use std::{io::Cursor, path::PathBuf};
 
 use crate::document::Document;
 use crate::{TarsierApp, edit_mode::EditMode};
 
 impl TarsierApp {
-    /// Reset icon
-    const RESET_ICON: ImageSource<'_> = include_image!("../assets/icon_x-circle.png");
-    /// Save state icon
-    const SAVE_STATE_ICON: ImageSource<'_> = include_image!("../assets/icon_check.png");
-    /// Rotate icon
-    const ROTATE_CCW_ICON: ImageSource<'_> = include_image!("../assets/icon_rotate_ccw.png");
-    /// Rotate icon inverse
-    const ROTATE_CW_ICON: ImageSource<'_> = include_image!("../assets/icon_rotate_cw.png");
-    /// Flip horizontal icon
-    const FLIP_H_ICON: ImageSource<'_> = include_image!("../assets/icon_flip_h.png");
-    /// Flip vertical icon
-    const FLIP_V_ICON: ImageSource<'_> = include_image!("../assets/icon_flip_v.png");
-
     /// Show the file menu
     pub(crate) fn app_menu_file(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
         if ui.button("New").clicked() {
@@ -118,18 +103,20 @@ impl TarsierApp {
             error_manager.add_error("No document to save");
             return;
         };
-        let current_save_path = document
-            .save_path
-            .clone()
-            .unwrap_or(PathBuf::from(format!("image.{extension}")));
+        let current_save_path =
+            if document.filename.extension().and_then(|e| e.to_str()) == Some(extension) {
+                document.filename.clone()
+            } else {
+                document.filename.with_extension(extension)
+            };
         let save_path = bladvak::utils::get_save_path(Some(&current_save_path));
         match save_path {
             Ok(save_p) => {
-                document.save_path.clone_from(&save_p);
-                if let Some(path_to_save) = save_p
-                    && let Err(err) = document.save_image(image_format, &path_to_save)
-                {
-                    error_manager.add_error(err);
+                if let Some(path_to_save) = save_p {
+                    document.filename.clone_from(&path_to_save);
+                    if let Err(err) = document.save_image(image_format, &path_to_save) {
+                        error_manager.add_error(err);
+                    }
                 }
             }
             Err(e) => {
@@ -138,103 +125,8 @@ impl TarsierApp {
         }
     }
 
-    /// Top panel operations
-    fn top_panel_operations(
-        &mut self,
-        ui: &mut egui::Ui,
-        error_manager: &mut ErrorManager,
-        is_dark_theme: bool,
-    ) {
-        let ico_image = Image::new(Self::RESET_ICON);
-        if ui
-            .add(egui::Button::image(if is_dark_theme {
-                ico_image
-            } else {
-                ico_image.tint(Color32::BLACK)
-            }))
-            .on_hover_text("Reset the image to the saved state")
-            .clicked()
-        {
-            let Some(document) = self.documents.get_current_doc_mut() else {
-                return;
-            };
-            let new_img = document.saved_img.clone();
-            self.update_image(new_img);
-        }
-        let ico_image = Image::new(Self::SAVE_STATE_ICON);
-        if ui
-            .add(egui::Button::image(if is_dark_theme {
-                ico_image
-            } else {
-                ico_image.tint(Color32::BLACK)
-            }))
-            .on_hover_text("Save the current image state")
-            .clicked()
-        {
-            let Some(document) = self.documents.get_current_doc_mut() else {
-                return;
-            };
-            document.saved_img = document.img.clone();
-        }
-        ui.separator();
-
-        let ico_image = Image::new(Self::ROTATE_CW_ICON);
-        if ui
-            .add(egui::Button::image(if is_dark_theme {
-                ico_image
-            } else {
-                ico_image.tint(Color32::BLACK)
-            }))
-            .on_hover_text("Rotate 90 degrees clockwise")
-            .clicked()
-        {
-            self.apply_op(image::DynamicImage::rotate90, error_manager);
-        }
-
-        let ico_image = Image::new(Self::ROTATE_CCW_ICON);
-        if ui
-            .add(egui::Button::image(if is_dark_theme {
-                ico_image
-            } else {
-                ico_image.tint(Color32::BLACK)
-            }))
-            .on_hover_text("Rotate 90 degrees counter-clockwise")
-            .clicked()
-        {
-            self.apply_op(image::DynamicImage::rotate270, error_manager);
-        }
-
-        let ico_image = Image::new(Self::FLIP_H_ICON);
-        if ui
-            .add(egui::Button::image(if is_dark_theme {
-                ico_image
-            } else {
-                ico_image.tint(Color32::BLACK)
-            }))
-            .on_hover_text("Flip horizontally")
-            .clicked()
-        {
-            self.apply_op(image::DynamicImage::fliph, error_manager);
-        }
-        let ico_image = Image::new(Self::FLIP_V_ICON);
-        if ui
-            .add(egui::Button::image(if is_dark_theme {
-                ico_image
-            } else {
-                ico_image.tint(Color32::BLACK)
-            }))
-            .on_hover_text("Flip vertically")
-            .clicked()
-        {
-            self.apply_op(image::DynamicImage::flipv, error_manager);
-        }
-    }
-
     /// Show the top panel
-    pub(crate) fn app_top_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
-        let is_dark_theme = ui.ctx().global_style().visuals.dark_mode;
-        ui.separator();
-        self.top_panel_operations(ui, error_manager, is_dark_theme);
+    pub(crate) fn app_top_panel(&mut self, ui: &mut egui::Ui, _error_manager: &mut ErrorManager) {
         let Some(document) = self.documents.get_current_doc_mut() else {
             return;
         };

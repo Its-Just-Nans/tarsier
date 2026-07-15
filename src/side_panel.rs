@@ -175,6 +175,7 @@ impl TarsierApp {
 
     /// Side panel content
     pub(crate) fn image_operations(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
+        self.quick_operations(ui, error_manager);
         self.button_convert(ui);
         ui.separator();
         self.button_outline(ui, error_manager);

@@ -609,9 +609,9 @@ dependencies = [
 
 [[package]]
 name = "bladvak"
-version = "1.3.8"
+version = "1.3.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d4e80fed7b9a71ce0ccd149b00addc6dc5a8a35b6e452a836869040d2df8a84b"
+checksum = "adafcd2603d2ede05466b4ed76cb4258873fb63164496c183e7a18390894b7e6"
 dependencies = [
  "arboard",
  "eframe",
@@ -3994,9 +3994,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.118"
+version = "2.0.119"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b9ae57f904213ebb649ce6895b8a66c66f0203b9319718f69a5612a065b1422"
+checksum = "872831b642d1a07999a962a351ed35b955ea2cfc8f3862091e2a240a84f17297"
 dependencies = [
  "proc-macro2",
  "quote",

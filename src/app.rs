@@ -11,12 +11,12 @@ use bladvak::{
     },
     utils::is_native,
 };
-use bladvak::{egui_extras, log};
+use bladvak::{egui_extras, log, utils::Documents};
 use image::{ColorType, DynamicImage, ImageReader};
-use std::{fmt::Debug, io::Cursor, sync::Arc};
+use std::{fmt::Debug, io::Cursor, path::PathBuf, sync::Arc};
 
 use crate::{
-    document::{Document, Documents},
+    document::Document,
     edit_mode::{EditMode, Mode},
     panels::{CursorInfo, ImageInfo, ImageOperationsPanel},
     side_panel::ImageOperations,
@@ -64,7 +64,7 @@ pub(crate) struct AppSettings {
 pub struct TarsierApp {
     /// list of documents
     #[serde(skip)]
-    pub(crate) documents: Documents,
+    pub(crate) documents: Documents<Document>,
     /// Editor mode
     pub(crate) mode: Mode,
     /// settings
@@ -79,6 +79,7 @@ impl Default for TarsierApp {
         let document = Document {
             saved_img: img.clone(),
             img,
+            filename: PathBuf::from("tarsier.png"),
             ..Default::default()
         };
         let mut documents = Documents::default();
@@ -313,7 +314,7 @@ impl BladvakApp<'_> for TarsierApp {
                     let cursor_data = Cursor::new(bytes.as_ref());
                     app.update_file(img, Some(cursor_data));
                     if let Some(document) = app.documents.get_current_doc_mut() {
-                        document.save_path = Some(absolute_path);
+                        document.filename = absolute_path;
                     }
                     Ok(app)
                 }
