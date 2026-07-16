@@ -132,7 +132,8 @@ impl TarsierApp {
                 self.mode.drawing.show(ui, max_radius);
             }
             EditMode::Selection => {
-                match document.selection.rectangle {
+                let mut reset_rect = false;
+                match &mut document.selection.rectangle {
                     Some(rect) => {
                         if ui
                             .label(format!(
@@ -143,18 +144,43 @@ impl TarsierApp {
                             .on_hover_text("Click to clear selection")
                             .clicked()
                         {
-                            document.selection.rectangle = None;
+                            reset_rect = true;
                         }
                         let width = rect.width().abs();
                         let height = rect.height().abs();
                         ui.label(format!("Width: {width:.0}"));
                         ui.label(format!("Height: {height:.0}"));
-                        ui.label(format!("Min: {:?}", rect.left_top()));
-                        ui.label(format!("Max: {:?}", rect.right_bottom()));
+                        #[allow(clippy::cast_precision_loss)]
+                        ui.horizontal(|ui| {
+                            ui.label("Min: ");
+                            ui.add(
+                                egui::DragValue::new(rect.left_mut())
+                                    .range(0.0..=(document.img.width() as f32)),
+                            );
+                            ui.add(
+                                egui::DragValue::new(rect.top_mut())
+                                    .range(0.0..=(document.img.height() as f32)),
+                            );
+                        });
+                        #[allow(clippy::cast_precision_loss)]
+                        ui.horizontal(|ui| {
+                            ui.label("Max: ");
+                            ui.add(
+                                egui::DragValue::new(rect.right_mut())
+                                    .range(0.0..=(document.img.width() as f32)),
+                            );
+                            ui.add(
+                                egui::DragValue::new(rect.bottom_mut())
+                                    .range(0.0..=(document.img.height() as f32)),
+                            );
+                        });
                     }
                     None => {
                         ui.label("No selection");
                     }
+                }
+                if reset_rect {
+                    document.selection.rectangle = None;
                 }
                 if let Some(selection) = document.selection.rectangle {
                     let icon_image = Image::new(Self::CROP_ICON);
