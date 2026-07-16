@@ -1,7 +1,7 @@
 //! Tarsier Panels
 use std::path::PathBuf;
 
-use bladvak::{app::BladvakPanel, eframe::egui};
+use bladvak::{app::BladvakPanel, eframe::egui, utils::grid::Grid};
 
 use crate::TarsierApp;
 
@@ -67,6 +67,15 @@ impl BladvakPanel for ImageInfo {
         ui: &mut egui::Ui,
         _error_manager: &mut bladvak::ErrorManager,
     ) {
+        ui.horizontal(|ui| {
+            ui.label(format!("{} settings", app.grid.title()));
+            ui.button("⟳").clicked().then(|| {
+                app.grid = Grid::default();
+            });
+            ui.checkbox(&mut app.grid.is_enabled, "");
+        });
+        app.grid.show_settings(ui);
+        ui.separator();
         if ui.button("Default image").clicked() {
             let (img, cursor) = TarsierApp::load_default_image();
             app.new_file(PathBuf::from("tarsier.png"), img, Some(cursor));

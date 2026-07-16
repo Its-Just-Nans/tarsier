@@ -1,6 +1,7 @@
 //! Central panel
 use bladvak::eframe::egui::{
-    self, Color32, ColorImage, Id, Image, ImageData, Modal, Pos2, Sense, TextureOptions, Vec2,
+    self, Color32, ColorImage, Id, Image, ImageData, Modal, Pos2, Sense, Stroke, TextureOptions,
+    Vec2,
 };
 use bladvak::errors::ErrorManager;
 use image::DynamicImage;
@@ -18,7 +19,7 @@ impl TarsierApp {
         ui: &mut egui::Ui,
         _error_manager: &mut ErrorManager,
     ) {
-        if self.documents.get_current_doc_mut().is_none() {
+        let Some(document) = self.documents.get_current_doc_mut() else {
             egui::Area::new("center".into())
                 .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
                 .show(ui.ctx(), |ui| {
@@ -28,11 +29,18 @@ impl TarsierApp {
                     });
                 });
             return;
-        }
-        egui::ScrollArea::both().show_viewport(ui, |ui, viewport| {
+        };
+        let mut rect = document.scene_rect;
+        egui::Scene::new().show(ui, &mut rect, |ui| {
             let Some(document) = self.documents.get_current_doc_mut() else {
                 return;
             };
+            let painter = ui.painter();
+            let bg_r: egui::Response = ui.response();
+            if bg_r.rect.is_finite() {
+                self.grid.draw(&bg_r.rect, painter);
+            }
+
             let size = [document.img.width() as _, document.img.height() as _];
             let image_texture = document.texture.get_or_insert_with(|| {
                 let image_buffer = document.img.to_rgba8();
@@ -48,7 +56,22 @@ impl TarsierApp {
                 Image::new((image_texture.id(), image_texture.size_vec2()))
                     .sense(Sense::click_and_drag()),
             );
+            let is_dark_theme = ui.ctx().global_style().visuals.dark_mode;
+            ui.painter().rect_stroke(
+                response.rect,
+                0.0, // corner radius
+                Stroke::new(
+                    1.0,
+                    if is_dark_theme {
+                        Color32::WHITE
+                    } else {
+                        Color32::BLACK
+                    },
+                ),
+                egui::StrokeKind::Outside,
+            );
             let img_position = response.rect;
+            let viewport = ui.ctx().viewport_rect();
             let ecart_x = img_position.min.x + viewport.min.x;
             let ecart_y = img_position.min.y + viewport.min.y;
 
@@ -203,6 +226,9 @@ impl TarsierApp {
                 );
             }
         });
+        if let Some(document) = self.documents.get_current_doc_mut() {
+            document.scene_rect = rect;
+        }
     }
 
     /// show the new image modal

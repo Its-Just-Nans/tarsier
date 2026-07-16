@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use crate::edit_mode::SelectionState;
 
 /// Document for one image
-#[derive(serde::Deserialize, serde::Serialize, Default)]
+#[derive(serde::Deserialize, serde::Serialize)]
 pub(crate) struct Document {
     /// Current image
     #[serde(skip)]
@@ -26,6 +26,8 @@ pub(crate) struct Document {
     pub(crate) filename: PathBuf,
     /// selection
     pub(crate) selection: SelectionState,
+    /// scene rect
+    pub(crate) scene_rect: egui::Rect,
 }
 
 impl std::fmt::Debug for Document {
@@ -34,6 +36,20 @@ impl std::fmt::Debug for Document {
             .field("filename", &self.filename)
             .field("selection", &self.selection)
             .finish_non_exhaustive()
+    }
+}
+
+impl Default for Document {
+    fn default() -> Self {
+        Self {
+            img: DynamicImage::default(),
+            saved_img: DynamicImage::default(),
+            texture: None,
+            exif: None,
+            filename: PathBuf::new(),
+            selection: SelectionState::default(),
+            scene_rect: egui::Rect::NAN,
+        }
     }
 }
 

@@ -9,6 +9,7 @@ use bladvak::{
         CreationContext,
         egui::{self, Color32, Image, ImageSource},
     },
+    utils::grid::Grid,
     utils::is_native,
 };
 use bladvak::{egui_extras, log, utils::Documents};
@@ -71,6 +72,8 @@ pub struct TarsierApp {
     pub(crate) settings: AppSettings,
     /// Image operations panel
     pub(crate) image_operations: ImageOperations,
+    /// Grid options
+    pub(crate) grid: Grid,
 }
 
 impl Default for TarsierApp {
@@ -89,6 +92,7 @@ impl Default for TarsierApp {
             mode: Mode::default(),
             image_operations: ImageOperations::default(),
             settings: AppSettings::default(),
+            grid: Grid::default(),
         }
     }
 }
