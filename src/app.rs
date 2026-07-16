@@ -150,28 +150,26 @@ impl TarsierApp {
                         let height = rect.height().abs();
                         ui.label(format!("Width: {width:.0}"));
                         ui.label(format!("Height: {height:.0}"));
+                        let right = rect.right();
+                        let bottom = rect.bottom();
+                        let left = rect.left();
+                        let top = rect.top();
                         #[allow(clippy::cast_precision_loss)]
                         ui.horizontal(|ui| {
                             ui.label("Min: ");
-                            ui.add(
-                                egui::DragValue::new(rect.left_mut())
-                                    .range(0.0..=(document.img.width() as f32)),
-                            );
-                            ui.add(
-                                egui::DragValue::new(rect.top_mut())
-                                    .range(0.0..=(document.img.height() as f32)),
-                            );
+                            ui.add(egui::DragValue::new(rect.left_mut()).range(0.0..=right));
+                            ui.add(egui::DragValue::new(rect.top_mut()).range(0.0..=bottom));
                         });
                         #[allow(clippy::cast_precision_loss)]
                         ui.horizontal(|ui| {
                             ui.label("Max: ");
                             ui.add(
                                 egui::DragValue::new(rect.right_mut())
-                                    .range(0.0..=(document.img.width() as f32)),
+                                    .range(left..=(document.img.width() as f32)),
                             );
                             ui.add(
                                 egui::DragValue::new(rect.bottom_mut())
-                                    .range(0.0..=(document.img.height() as f32)),
+                                    .range(top..=(document.img.height() as f32)),
                             );
                         });
                     }
