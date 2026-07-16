@@ -1,6 +1,7 @@
 //! Top panel
 use bladvak::eframe::egui::{self, Color32, TextFormat, text::LayoutJob};
 use bladvak::errors::ErrorManager;
+use bladvak::utils::is_web;
 use image::ImageFormat;
 use std::io::Cursor;
 use std::path::Path;
@@ -16,46 +17,55 @@ impl TarsierApp {
             ui.close();
         }
         self.menu_clipboard(ui, error_manager);
-        ui.menu_button("Save", |ui| {
-            if ui.button("PNG").clicked() {
-                ui.close();
-                self.save_image_with_format(
-                    ImageFormat::Png.extensions_str()[0],
-                    ImageFormat::Png,
-                    error_manager,
-                );
-            }
-            if ui.button("JPEG").clicked() {
-                ui.close();
-                self.save_image_with_format(
-                    ImageFormat::Jpeg.extensions_str()[0],
-                    ImageFormat::Jpeg,
-                    error_manager,
-                );
-            }
-            if ui.button("BMP").clicked() {
-                ui.close();
-                self.save_image_with_format(
-                    ImageFormat::Bmp.extensions_str()[0],
-                    ImageFormat::Bmp,
-                    error_manager,
-                );
-            }
-            if ui.button("GIF").clicked() {
-                ui.close();
-                self.save_image_with_format(
-                    ImageFormat::Gif.extensions_str()[0],
-                    ImageFormat::Gif,
-                    error_manager,
-                );
-            }
-        });
+        if self.documents.is_some() {
+            ui.menu_button("Save", |ui| {
+                if ui.button("PNG").clicked() {
+                    ui.close();
+                    self.save_image_with_format(
+                        ImageFormat::Png.extensions_str()[0],
+                        ImageFormat::Png,
+                        error_manager,
+                    );
+                }
+                if ui.button("JPEG").clicked() {
+                    ui.close();
+                    self.save_image_with_format(
+                        ImageFormat::Jpeg.extensions_str()[0],
+                        ImageFormat::Jpeg,
+                        error_manager,
+                    );
+                }
+                if ui.button("BMP").clicked() {
+                    ui.close();
+                    self.save_image_with_format(
+                        ImageFormat::Bmp.extensions_str()[0],
+                        ImageFormat::Bmp,
+                        error_manager,
+                    );
+                }
+                if ui.button("GIF").clicked() {
+                    ui.close();
+                    self.save_image_with_format(
+                        ImageFormat::Gif.extensions_str()[0],
+                        ImageFormat::Gif,
+                        error_manager,
+                    );
+                }
+            });
+        }
     }
 
     /// Show the clipboard menu
     pub fn menu_clipboard(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
+        let is_document = self.documents.is_some();
+        #[cfg(target_arch = "wasm32")]
+        if !is_document {
+            return;
+        }
         ui.menu_button("Clipboard", |ui| {
-            if ui.button("Copy").clicked()
+            let show_copy = if is_web() { true } else { is_document };
+            if show_copy
+                && ui.button("Copy").clicked()
                 && let Some(document) = self.documents.get_current_doc_mut()
                 && let Err(e) = bladvak::utils::set_image_in_clipboard(
                     ui.ctx(),
@@ -77,8 +87,10 @@ impl TarsierApp {
                             height as u32,
                             rgba_data.clone(),
                         ) {
+                            use std::path::PathBuf;
+
                             let img = image::DynamicImage::ImageRgba8(buffer);
-                            self.update_image(img);
+                            self.new_file(PathBuf::from("pasted.png"), img, None);
                         } else {
                             error_manager
                                 .add_error("Invalid image data from clipboard".to_string());
@@ -166,22 +178,8 @@ impl TarsierApp {
                 }
             }
         });
-        if let Some(selection) = document.selection.rectangle {
-            ui.separator();
-            if ui
-                .label(format!(
-                    "Selection: {:.0}x{:.0}",
-                    (selection.max.x - selection.min.x).abs(),
-                    (selection.max.y - selection.min.y).abs()
-                ))
-                .on_hover_text("Click to clear selection")
-                .clicked()
-            {
-                document.selection.rectangle = None;
-            }
-        }
         ui.separator();
-        // TODO show documents
+        self.documents.show_file_list(ui);
     }
 }
 

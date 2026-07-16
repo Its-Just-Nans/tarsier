@@ -4,6 +4,7 @@ use bladvak::eframe::egui::{
 };
 use bladvak::errors::ErrorManager;
 use image::DynamicImage;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use crate::{TarsierApp, edit_mode::EditMode};
@@ -202,7 +203,10 @@ impl TarsierApp {
                 );
             }
         });
+    }
 
+    /// show the new image modal
+    pub(crate) fn show_new_image_modal(&mut self, ui: &mut egui::Ui) {
         if self.settings.new_image.is_open {
             let modal = Modal::new(Id::new("Modal new image")).show(ui.ctx(), |ui| {
                 ui.label("Create a new image");
@@ -234,7 +238,7 @@ impl TarsierApp {
                                 self.settings.new_image.height,
                                 self.settings.new_image.color_type,
                             );
-                            self.update_file(new_img, None);
+                            self.new_file(PathBuf::from("new.png"), new_img, None);
                             modal_ui.close();
                         }
                     },

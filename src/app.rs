@@ -130,6 +130,17 @@ impl TarsierApp {
             EditMode::Selection => {
                 match document.selection.rectangle {
                     Some(rect) => {
+                        if ui
+                            .label(format!(
+                                "Selection: {:.0}x{:.0}",
+                                (rect.max.x - rect.min.x).abs(),
+                                (rect.max.y - rect.min.y).abs()
+                            ))
+                            .on_hover_text("Click to clear selection")
+                            .clicked()
+                        {
+                            document.selection.rectangle = None;
+                        }
                         let width = rect.width().abs();
                         let height = rect.height().abs();
                         ui.label(format!("Width: {width:.0}"));
@@ -175,29 +186,27 @@ impl TarsierApp {
         }
     }
 
-    /// Update the image file
-    pub(crate) fn update_file(&mut self, new_img: DynamicImage, opt_cursor: Option<Cursor<&[u8]>>) {
-        let Some(document) = self.documents.get_current_doc_mut() else {
-            return;
-        };
-        document.saved_img.clone_from(&new_img);
-        self.update_image(new_img);
-        let Some(document) = self.documents.get_current_doc_mut() else {
-            return;
-        };
-        let exifreader = exif::Reader::new();
-        if let Some(bytes) = opt_cursor {
+    /// create a new
+    pub(crate) fn new_file(
+        &mut self,
+        filename: PathBuf,
+        new_img: DynamicImage,
+        opt_cursor: Option<Cursor<&[u8]>>,
+    ) {
+        let exif = if let Some(bytes) = opt_cursor {
             let mut bufreader = std::io::BufReader::new(bytes);
-            match exifreader.read_from_container(&mut bufreader) {
-                Ok(exif) => document.exif = Some(exif),
-                Err(e) => {
-                    document.exif = None;
-                    log::info!("Cannot get exif of image: {e}");
-                }
-            }
+            exif::Reader::new().read_from_container(&mut bufreader).ok()
         } else {
-            document.exif = None;
-        }
+            None
+        };
+        let new_document = Document {
+            saved_img: new_img.clone(),
+            img: new_img,
+            exif,
+            filename,
+            ..Default::default()
+        };
+        self.documents.push(new_document);
     }
 
     /// Update image
@@ -240,7 +249,7 @@ impl BladvakApp<'_> for TarsierApp {
     }
 
     fn is_side_panel(&self) -> bool {
-        true
+        self.documents.is_some()
     }
 
     fn is_open_button(&self) -> bool {
@@ -259,7 +268,7 @@ impl BladvakApp<'_> for TarsierApp {
             }
         };
         let cursor = Cursor::new(file.data.as_ref());
-        self.update_file(img, Some(cursor));
+        self.new_file(PathBuf::from("dropped.png"), img, Some(cursor));
         Ok(())
     }
 
@@ -273,6 +282,7 @@ impl BladvakApp<'_> for TarsierApp {
 
     fn central_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
         self.app_central_panel(ui, error_manager);
+        self.show_new_image_modal(ui);
     }
 
     fn name() -> String {
@@ -303,29 +313,29 @@ impl BladvakApp<'_> for TarsierApp {
 
         if is_native() && args.len() > 1 {
             use std::fs;
-            let path = &args[1];
-            let absolute_path = fs::canonicalize(path)?;
-            let bytes = fs::read(&absolute_path)?;
-            let cursor: Cursor<&[u8]> = Cursor::new(bytes.as_ref());
-            let img_reader = ImageReader::new(cursor);
-            match img_reader.with_guessed_format()?.decode() {
-                Ok(img) => {
-                    let mut app = saved_state;
-                    let cursor_data = Cursor::new(bytes.as_ref());
-                    app.update_file(img, Some(cursor_data));
-                    if let Some(document) = app.documents.get_current_doc_mut() {
-                        document.filename = absolute_path;
+            let mut app = saved_state;
+            app.documents.clear();
+            for one_path in &args[1..] {
+                let absolute_path = fs::canonicalize(one_path)
+                    .map_err(|e| format!("Unable to canonicalize path '{one_path}': {e}"))?;
+                let bytes = fs::read(&absolute_path)?;
+                let cursor: Cursor<&[u8]> = Cursor::new(bytes.as_ref());
+                let img_reader = ImageReader::new(cursor);
+                match img_reader.with_guessed_format()?.decode() {
+                    Ok(img) => {
+                        let cursor_data = Cursor::new(bytes.as_ref());
+                        app.new_file(absolute_path, img, Some(cursor_data));
                     }
-                    Ok(app)
-                }
-                Err(e) => {
-                    log::error!("Failed to load image '{}': {e}", absolute_path.display());
-                    Err(AppError::new_with_source(
-                        format!("Failed to load image '{}'", absolute_path.display()),
-                        Arc::new(e),
-                    ))
+                    Err(e) => {
+                        log::error!("Failed to load image '{}': {e}", absolute_path.display());
+                        return Err(AppError::new_with_source(
+                            format!("Failed to load image '{}'", absolute_path.display()),
+                            Arc::new(e),
+                        ));
+                    }
                 }
             }
+            Ok(app)
         } else {
             Ok(saved_state)
         }
