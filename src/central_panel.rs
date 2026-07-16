@@ -1,7 +1,6 @@
 //! Central panel
 use bladvak::eframe::egui::{
-    self, Color32, ColorImage, Id, Image, ImageData, Modal, Pos2, Sense, Stroke, TextureOptions,
-    Vec2,
+    self, Color32, ColorImage, Id, Image, ImageData, Modal, Pos2, Sense, TextureOptions, Vec2,
 };
 use bladvak::errors::ErrorManager;
 use image::DynamicImage;
@@ -60,7 +59,7 @@ impl TarsierApp {
             ui.painter().rect_stroke(
                 response.rect,
                 0.0, // corner radius
-                Stroke::new(
+                egui::Stroke::new(
                     1.0,
                     if is_dark_theme {
                         Color32::WHITE
@@ -76,9 +75,8 @@ impl TarsierApp {
             let ecart_y = img_position.min.y + viewport.min.y;
 
             let painter = ui.painter();
-
             if let EditMode::Drawing = self.mode.current
-                && let Some(pos) = ui.ctx().input(|i| i.pointer.clone()).latest_pos()
+                && let Some(pos) = response.hover_pos()
             {
                 painter.circle(
                     pos,
