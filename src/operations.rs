@@ -57,6 +57,7 @@ impl TarsierApp {
                 document.saved_img = document.img.clone();
             }
         });
+        ui.separator();
         ui.horizontal(|ui| {
             let ico_image = Image::new(Self::ROTATE_CW_ICON);
             if ui

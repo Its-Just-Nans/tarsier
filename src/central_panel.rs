@@ -30,200 +30,203 @@ impl TarsierApp {
             return;
         };
         let mut rect = document.scene_rect;
-        egui::Scene::new().show(ui, &mut rect, |ui| {
-            let Some(document) = self.documents.get_current_doc_mut() else {
-                return;
-            };
-            let painter = ui.painter();
-            let bg_r: egui::Response = ui.response();
-            if bg_r.rect.is_finite() {
-                self.grid.draw(&bg_r.rect, painter);
-            }
-
-            let size = [document.img.width() as _, document.img.height() as _];
-            let image_texture = document.texture.get_or_insert_with(|| {
-                let image_buffer = document.img.to_rgba8();
-                let pixels = image_buffer.as_flat_samples();
-                let image = ColorImage::from_rgba_unmultiplied(size, pixels.as_slice());
-                ui.ctx().load_texture(
-                    "img",
-                    ImageData::Color(Arc::new(image)),
-                    TextureOptions::default(),
-                )
-            });
-            let response = ui.add(
-                Image::new((image_texture.id(), image_texture.size_vec2()))
-                    .sense(Sense::click_and_drag()),
-            );
-            let is_dark_theme = ui.ctx().global_style().visuals.dark_mode;
-            ui.painter().rect_stroke(
-                response.rect,
-                0.0, // corner radius
-                egui::Stroke::new(
-                    1.0,
-                    if is_dark_theme {
-                        Color32::WHITE
-                    } else {
-                        Color32::BLACK
-                    },
-                ),
-                egui::StrokeKind::Outside,
-            );
-            let img_position = response.rect;
-            let viewport = ui.ctx().viewport_rect();
-            let ecart_x = img_position.min.x + viewport.min.x;
-            let ecart_y = img_position.min.y + viewport.min.y;
-
-            let painter = ui.painter();
-            if let EditMode::Drawing = self.mode.current
-                && let Some(pos) = response.hover_pos()
-            {
-                painter.circle(
-                    pos,
-                    self.mode.drawing.pen_radius as f32,
-                    Color32::TRANSPARENT,
-                    egui::Stroke::new(1.0, Color32::BLACK),
-                );
-            }
-
-            if response.dragged() {
-                if let Some(pos) = response.interact_pointer_pos() {
-                    if !document.selection.is_selecting {
-                        document.selection.rectangle = None;
-                    }
-                    let pos = pos - Vec2::new(ecart_x - viewport.min.x, ecart_y - viewport.min.y);
-                    let correct_pos = Pos2::new(
-                        pos.x.round().clamp(0.0, size[0] as f32),
-                        pos.y.round().clamp(0.0, size[1] as f32),
-                    );
-                    match self.mode.current {
-                        EditMode::Cursor => {
-                            // no nothing
-                        }
-                        EditMode::Selection => {
-                            document.selection.rectangle =
-                                if let Some(_rect) = document.selection.rectangle {
-                                    Some(egui::Rect::from_two_pos(
-                                        document.selection.start_selection,
-                                        correct_pos,
-                                    ))
-                                } else {
-                                    document.selection.start_selection = correct_pos;
-                                    Some(egui::Rect::from_two_pos(correct_pos, correct_pos))
-                                };
-                            document.selection.is_selecting = true;
-                        }
-                        EditMode::Drawing => {
-                            #[allow(clippy::cast_possible_truncation)]
-                            if self.mode.drawing.drawing_continuous_line
-                                && let Some(last_post) = document.selection.last_drawing_point
-                            {
-                                let pts = points_between(last_post, correct_pos);
-                                for p in pts {
-                                    self.draw_point(p.x as i32, p.y as i32);
-                                }
-                            } else {
-                                self.draw_point(correct_pos.x as i32, correct_pos.y as i32);
-                            }
-                            if let Some(document) = self.documents.get_current_doc_mut() {
-                                document.selection.last_drawing_point = Some(correct_pos);
-                            }
-                        }
-                    }
+        egui::Scene::new()
+            .zoom_range(0.0..=f32::INFINITY)
+            .show(ui, &mut rect, |ui| {
+                let Some(document) = self.documents.get_current_doc_mut() else {
+                    return;
+                };
+                let painter = ui.painter();
+                let bg_r: egui::Response = ui.response();
+                if bg_r.rect.is_finite() {
+                    self.grid.draw(&bg_r.rect, painter);
                 }
-            } else {
-                document.selection.is_selecting = false;
-                document.selection.last_drawing_point = None;
-            }
-            let Some(document) = self.documents.get_current_doc_mut() else {
-                return;
-            };
 
-            if response.clicked() {
-                document.selection.rectangle = None;
-                match self.mode.current {
-                    EditMode::Cursor => {
-                        // do nothing
-                    }
-                    EditMode::Selection => {
-                        document.selection.rectangle = None;
-                    }
-                    EditMode::Drawing => {
-                        if let Some(pos) = response.interact_pointer_pos() {
-                            let pos =
-                                pos - Vec2::new(ecart_x - viewport.min.x, ecart_y - viewport.min.y);
-                            let correct_pos = Pos2::new(
-                                pos.x.round().clamp(0.0, size[0] as f32),
-                                pos.y.round().clamp(0.0, size[1] as f32),
-                            );
-                            #[allow(clippy::cast_possible_truncation)]
-                            self.draw_point(correct_pos.x as i32, correct_pos.y as i32);
-                            if let Some(document) = self.documents.get_current_doc_mut() {
-                                document.selection.last_drawing_point = None;
-                            }
-                        }
-                    }
-                }
-            }
-            let Some(document) = self.documents.get_current_doc_mut() else {
-                return;
-            };
-            if let Some(selection) = document.selection.rectangle {
-                let min_pos = img_position.min;
-                let rect_selection = egui::Rect::from_two_pos(
-                    Pos2::new(
-                        selection.min.x - viewport.min.x + ecart_x,
-                        selection.min.y - viewport.min.y + ecart_y,
-                    ),
-                    Pos2::new(
-                        selection.max.x - viewport.min.x + ecart_x,
-                        selection.max.y - viewport.min.y + ecart_y,
-                    ),
+                let size = [document.img.width() as _, document.img.height() as _];
+                let image_texture = document.texture.get_or_insert_with(|| {
+                    let image_buffer = document.img.to_rgba8();
+                    let pixels = image_buffer.as_flat_samples();
+                    let image = ColorImage::from_rgba_unmultiplied(size, pixels.as_slice());
+                    ui.ctx().load_texture(
+                        "img",
+                        ImageData::Color(Arc::new(image)),
+                        TextureOptions::default(),
+                    )
+                });
+                let response = ui.add(
+                    Image::new((image_texture.id(), image_texture.size_vec2()))
+                        .sense(Sense::click_and_drag()),
                 );
-                painter.rect_stroke(
-                    rect_selection,
-                    0.0,
-                    egui::Stroke::new(1.0, Color32::BLACK),
+                let is_dark_theme = ui.ctx().global_style().visuals.dark_mode;
+                ui.painter().rect_stroke(
+                    response.rect,
+                    0.0, // corner radius
+                    egui::Stroke::new(
+                        1.0,
+                        if is_dark_theme {
+                            Color32::WHITE
+                        } else {
+                            Color32::BLACK
+                        },
+                    ),
                     egui::StrokeKind::Outside,
                 );
-                // rect above selection
-                painter.rect_filled(
-                    egui::Rect::from_min_max(
-                        Pos2::new(min_pos.x, min_pos.y),
-                        Pos2::new(size[0] as f32 + min_pos.x, rect_selection.min.y),
-                    ),
-                    0.0,
-                    Color32::from_black_alpha(50),
-                );
-                // rect below selection
-                painter.rect_filled(
-                    egui::Rect::from_min_max(
-                        Pos2::new(min_pos.x, rect_selection.max.y),
-                        Pos2::new(size[0] as f32 + min_pos.x, size[1] as f32 + min_pos.y),
-                    ),
-                    0.0,
-                    Color32::from_black_alpha(50),
-                );
-                // rect left of selection
-                painter.rect_filled(
-                    egui::Rect::from_min_max(
-                        Pos2::new(min_pos.x, rect_selection.min.y),
-                        Pos2::new(rect_selection.min.x, rect_selection.max.y),
-                    ),
-                    0.0,
-                    Color32::from_black_alpha(50),
-                );
-                // rect right of selection
-                painter.rect_filled(
-                    egui::Rect::from_min_max(
-                        Pos2::new(rect_selection.max.x, rect_selection.min.y),
-                        Pos2::new(size[0] as f32 + min_pos.x, rect_selection.max.y),
-                    ),
-                    0.0,
-                    Color32::from_black_alpha(50),
-                );
-            }
-        });
+                let img_position = response.rect;
+                let viewport = ui.ctx().viewport_rect();
+                let ecart_x = img_position.min.x + viewport.min.x;
+                let ecart_y = img_position.min.y + viewport.min.y;
+
+                let painter = ui.painter();
+                if let EditMode::Drawing = self.mode.current
+                    && let Some(pos) = response.hover_pos()
+                {
+                    painter.circle(
+                        pos,
+                        self.mode.drawing.pen_radius as f32,
+                        Color32::TRANSPARENT,
+                        egui::Stroke::new(1.0, Color32::BLACK),
+                    );
+                }
+
+                if response.dragged() {
+                    if let Some(pos) = response.interact_pointer_pos() {
+                        if !document.selection.is_selecting {
+                            document.selection.rectangle = None;
+                        }
+                        let pos =
+                            pos - Vec2::new(ecart_x - viewport.min.x, ecart_y - viewport.min.y);
+                        let correct_pos = Pos2::new(
+                            pos.x.round().clamp(0.0, size[0] as f32),
+                            pos.y.round().clamp(0.0, size[1] as f32),
+                        );
+                        match self.mode.current {
+                            EditMode::Cursor => {
+                                // no nothing
+                            }
+                            EditMode::Selection => {
+                                document.selection.rectangle =
+                                    if let Some(_rect) = document.selection.rectangle {
+                                        Some(egui::Rect::from_two_pos(
+                                            document.selection.start_selection,
+                                            correct_pos,
+                                        ))
+                                    } else {
+                                        document.selection.start_selection = correct_pos;
+                                        Some(egui::Rect::from_two_pos(correct_pos, correct_pos))
+                                    };
+                                document.selection.is_selecting = true;
+                            }
+                            EditMode::Drawing => {
+                                #[allow(clippy::cast_possible_truncation)]
+                                if self.mode.drawing.drawing_continuous_line
+                                    && let Some(last_post) = document.selection.last_drawing_point
+                                {
+                                    let pts = points_between(last_post, correct_pos);
+                                    for p in pts {
+                                        self.draw_point(p.x as i32, p.y as i32);
+                                    }
+                                } else {
+                                    self.draw_point(correct_pos.x as i32, correct_pos.y as i32);
+                                }
+                                if let Some(document) = self.documents.get_current_doc_mut() {
+                                    document.selection.last_drawing_point = Some(correct_pos);
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    document.selection.is_selecting = false;
+                    document.selection.last_drawing_point = None;
+                }
+                let Some(document) = self.documents.get_current_doc_mut() else {
+                    return;
+                };
+
+                if response.clicked() {
+                    document.selection.rectangle = None;
+                    match self.mode.current {
+                        EditMode::Cursor => {
+                            // do nothing
+                        }
+                        EditMode::Selection => {
+                            document.selection.rectangle = None;
+                        }
+                        EditMode::Drawing => {
+                            if let Some(pos) = response.interact_pointer_pos() {
+                                let pos = pos
+                                    - Vec2::new(ecart_x - viewport.min.x, ecart_y - viewport.min.y);
+                                let correct_pos = Pos2::new(
+                                    pos.x.round().clamp(0.0, size[0] as f32),
+                                    pos.y.round().clamp(0.0, size[1] as f32),
+                                );
+                                #[allow(clippy::cast_possible_truncation)]
+                                self.draw_point(correct_pos.x as i32, correct_pos.y as i32);
+                                if let Some(document) = self.documents.get_current_doc_mut() {
+                                    document.selection.last_drawing_point = None;
+                                }
+                            }
+                        }
+                    }
+                }
+                let Some(document) = self.documents.get_current_doc_mut() else {
+                    return;
+                };
+                if let Some(selection) = document.selection.rectangle {
+                    let min_pos = img_position.min;
+                    let rect_selection = egui::Rect::from_two_pos(
+                        Pos2::new(
+                            selection.min.x - viewport.min.x + ecart_x,
+                            selection.min.y - viewport.min.y + ecart_y,
+                        ),
+                        Pos2::new(
+                            selection.max.x - viewport.min.x + ecart_x,
+                            selection.max.y - viewport.min.y + ecart_y,
+                        ),
+                    );
+                    painter.rect_stroke(
+                        rect_selection,
+                        0.0,
+                        egui::Stroke::new(1.0, Color32::BLACK),
+                        egui::StrokeKind::Outside,
+                    );
+                    // rect above selection
+                    painter.rect_filled(
+                        egui::Rect::from_min_max(
+                            Pos2::new(min_pos.x, min_pos.y),
+                            Pos2::new(size[0] as f32 + min_pos.x, rect_selection.min.y),
+                        ),
+                        0.0,
+                        Color32::from_black_alpha(50),
+                    );
+                    // rect below selection
+                    painter.rect_filled(
+                        egui::Rect::from_min_max(
+                            Pos2::new(min_pos.x, rect_selection.max.y),
+                            Pos2::new(size[0] as f32 + min_pos.x, size[1] as f32 + min_pos.y),
+                        ),
+                        0.0,
+                        Color32::from_black_alpha(50),
+                    );
+                    // rect left of selection
+                    painter.rect_filled(
+                        egui::Rect::from_min_max(
+                            Pos2::new(min_pos.x, rect_selection.min.y),
+                            Pos2::new(rect_selection.min.x, rect_selection.max.y),
+                        ),
+                        0.0,
+                        Color32::from_black_alpha(50),
+                    );
+                    // rect right of selection
+                    painter.rect_filled(
+                        egui::Rect::from_min_max(
+                            Pos2::new(rect_selection.max.x, rect_selection.min.y),
+                            Pos2::new(size[0] as f32 + min_pos.x, rect_selection.max.y),
+                        ),
+                        0.0,
+                        Color32::from_black_alpha(50),
+                    );
+                }
+            });
         if let Some(document) = self.documents.get_current_doc_mut() {
             document.scene_rect = rect;
         }

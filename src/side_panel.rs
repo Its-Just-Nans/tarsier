@@ -3,7 +3,7 @@
 use bladvak::eframe::egui;
 use bladvak::egui_extras::{Column, TableBuilder};
 use bladvak::errors::{AppError, ErrorManager};
-use image::{ColorType, DynamicImage, GenericImage, GenericImageView, Pixel};
+use image::{ColorType, DynamicImage, GenericImage, GenericImageView, Pixel, imageops::FilterType};
 use std::sync::Arc;
 
 use crate::TarsierApp;
@@ -23,6 +23,27 @@ impl Default for Others {
     }
 }
 
+/// resize settings
+#[derive(Clone, Debug)]
+pub(crate) struct Resize {
+    /// new width
+    pub(crate) nwidth: u32,
+    /// new height
+    pub(crate) nheight: u32,
+    /// filter
+    pub(crate) filter: FilterType,
+}
+
+impl Default for Resize {
+    fn default() -> Self {
+        Self {
+            nwidth: 500,
+            nheight: 500,
+            filter: FilterType::Lanczos3,
+        }
+    }
+}
+
 /// Image opterations settings
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub(crate) struct ImageOperations {
@@ -37,6 +58,9 @@ pub(crate) struct ImageOperations {
     /// Others
     #[serde(skip)]
     pub(crate) other: Others,
+    /// resize
+    #[serde(skip)]
+    pub(crate) resize: Resize,
 }
 
 impl Default for ImageOperations {
@@ -46,9 +70,8 @@ impl Default for ImageOperations {
             hue_rotation: 50,
             brighten: 50,
             contrast: 1.0,
-            other: Others {
-                convert_to: ColorType::Rgba8,
-            },
+            other: Others::default(),
+            resize: Resize::default(),
         }
     }
 }
@@ -263,6 +286,56 @@ impl TarsierApp {
             let contrast = self.image_operations.contrast;
             self.apply_op(|img| img.adjust_contrast(contrast), error_manager);
         }
+        ui.separator();
+        self.show_resize(ui, error_manager);
+    }
+
+    /// show resize ui
+    fn show_resize(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
+        ui.collapsing("Resize", |ui| {
+            ui.add(egui::DragValue::new(
+                &mut self.image_operations.resize.nwidth,
+            ));
+            ui.add(egui::DragValue::new(
+                &mut self.image_operations.resize.nheight,
+            ));
+            egui::ComboBox::from_id_salt("convert_box")
+                .selected_text(display_filter_type(&self.image_operations.resize.filter))
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(
+                        &mut self.image_operations.resize.filter,
+                        FilterType::Nearest,
+                        format!("{:?}", FilterType::Nearest),
+                    );
+                    ui.selectable_value(
+                        &mut self.image_operations.resize.filter,
+                        FilterType::Triangle,
+                        format!("{:?}", FilterType::Triangle),
+                    );
+                    ui.selectable_value(
+                        &mut self.image_operations.resize.filter,
+                        FilterType::CatmullRom,
+                        format!("{:?}", FilterType::CatmullRom),
+                    );
+                    ui.selectable_value(
+                        &mut self.image_operations.resize.filter,
+                        FilterType::Gaussian,
+                        format!("{:?}", FilterType::Gaussian),
+                    );
+                    ui.selectable_value(
+                        &mut self.image_operations.resize.filter,
+                        FilterType::Lanczos3,
+                        format!("{:?}", FilterType::Lanczos3),
+                    );
+                });
+            if ui.button("Resize").clicked() {
+                let resize = self.image_operations.resize.clone();
+                self.apply_op(
+                    |img| img.resize(resize.nwidth, resize.nheight, resize.filter),
+                    error_manager,
+                );
+            }
+        });
     }
 
     /// Apply operation
@@ -380,5 +453,16 @@ impl TarsierApp {
             }
         }
         self.updated_image();
+    }
+}
+
+/// display a `FilterType`
+fn display_filter_type(filter_type: &FilterType) -> &str {
+    match filter_type {
+        FilterType::Nearest => "Nearest",
+        FilterType::Triangle => "Triangle",
+        FilterType::CatmullRom => "CatmullRom",
+        FilterType::Gaussian => "Gaussian",
+        FilterType::Lanczos3 => "Lanczos3",
     }
 }
