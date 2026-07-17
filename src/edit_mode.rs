@@ -41,7 +41,18 @@ impl DrawingMode {
         )
         .on_hover_text("Pen color");
         self.pen_color = [color.r(), color.g(), color.b(), color.a()];
-        ui.checkbox(&mut self.drawing_blend, "Blend");
+        ui.horizontal(|ui| {
+            ui.label("Pixel mode:");
+            if ui
+                .selectable_label(!self.drawing_blend, "Replace")
+                .clicked()
+            {
+                self.drawing_blend = false;
+            }
+            if ui.selectable_label(self.drawing_blend, "Blend").clicked() {
+                self.drawing_blend = true;
+            }
+        });
         ui.checkbox(&mut self.drawing_continuous_line, "Continuous line");
     }
 }

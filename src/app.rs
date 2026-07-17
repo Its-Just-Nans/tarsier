@@ -125,7 +125,7 @@ impl TarsierApp {
         };
         match self.mode.current {
             EditMode::Cursor => {
-                ui.label("Doing nothing");
+                // do nothing
             }
             EditMode::Drawing => {
                 let max_radius = document.img.width().max(document.img.height());
@@ -259,15 +259,6 @@ impl TarsierApp {
 }
 
 impl BladvakApp<'_> for TarsierApp {
-    fn side_panel(
-        &mut self,
-        ui: &mut egui::Ui,
-        func_ui: impl FnOnce(&mut egui::Ui, &mut TarsierApp),
-    ) {
-        egui::Frame::central_panel(&ui.ctx().global_style())
-            .show(ui, |panel_ui| func_ui(panel_ui, self));
-    }
-
     fn panel_list(&self) -> Vec<Box<dyn bladvak::app::BladvakPanel<App = Self>>> {
         vec![
             Box::new(ImageInfo),
