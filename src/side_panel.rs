@@ -1,12 +1,13 @@
 //! Side panel
 
-use bladvak::eframe::egui::{self, Pos2};
+use bladvak::eframe::egui::{self, Color32, Pos2};
 use bladvak::egui_extras::{Column, TableBuilder};
 use bladvak::errors::{AppError, ErrorManager};
 use image::{ColorType, DynamicImage, GenericImage, GenericImageView, Pixel, imageops::FilterType};
 use std::sync::Arc;
 
 use crate::TarsierApp;
+use crate::document::Document;
 
 /// Image settings
 #[derive(Debug)]
@@ -425,42 +426,59 @@ impl TarsierApp {
 
     /// Draw a point
     #[allow(clippy::cast_sign_loss)]
-    pub(crate) fn draw_point(&mut self, x_center: i32, y_center: i32) {
+    pub(crate) fn draw_point(&mut self, x_center: u32, y_center: u32) {
         let Some(document) = self.documents.get_current_doc_mut() else {
             return;
         };
-        let drawing = self.mode.drawing;
-        let radius = i32::try_from(drawing.pen_radius).unwrap_or(10);
-        let color = image::Rgba(drawing.pen_color);
-        for y in (y_center - radius)..=(y_center + radius) {
-            for x in (x_center - radius)..=(x_center + radius) {
-                if (x - x_center).pow(2) + (y - y_center).pow(2) <= radius.pow(2) {
+        let radius = self.mode.drawing.pen_radius;
+        let min_y = y_center.saturating_sub(radius);
+        for y in min_y..=(y_center + radius) {
+            let min_x = x_center.saturating_sub(radius);
+            for x in min_x..=(x_center + radius) {
+                if x.saturating_sub(x_center).pow(2)
+                    + y.saturating_sub(y_center).pow(2)
+                    + x_center.saturating_sub(x).pow(2)
+                    + y_center.saturating_sub(y).pow(2)
+                    <= radius.pow(2)
+                {
                     // Ensure pixel is within bounds
-                    if x >= 0
-                        && y >= 0
-                        && x < i32::try_from(document.img.width()).unwrap_or(i32::MAX)
-                        && y < i32::try_from(document.img.height()).unwrap_or(i32::MAX)
-                    {
+                    if x < document.img.width() && y < document.img.height() {
                         #[allow(clippy::cast_precision_loss)]
                         if let Some(rect) = document.selection.rectangle
                             && !rect.contains(Pos2::new(x as f32, y as f32))
                         {
                             continue;
                         }
-                        let x = x as u32;
-                        let y = y as u32;
-                        if drawing.drawing_blend {
-                            let mut current_pixel = document.img.get_pixel(x, y);
-                            current_pixel.blend(&color);
-                            document.img.put_pixel(x, y, current_pixel);
-                        } else {
-                            document.img.put_pixel(x, y, color);
-                        }
+                        draw_single_point(
+                            document,
+                            x,
+                            y,
+                            self.mode.drawing.pen_color,
+                            self.mode.drawing.drawing_blend,
+                        );
                     }
                 }
             }
         }
         self.updated_image();
+    }
+}
+
+/// draw a single point
+fn draw_single_point(
+    document: &mut Document,
+    x: u32,
+    y: u32,
+    pen_color: [u8; 4],
+    drawing_blend: bool,
+) {
+    let color = image::Rgba(pen_color);
+    if drawing_blend {
+        let mut current_pixel = document.img.get_pixel(x, y);
+        current_pixel.blend(&color);
+        document.img.put_pixel(x, y, current_pixel);
+    } else {
+        document.img.put_pixel(x, y, color);
     }
 }
 
