@@ -119,9 +119,11 @@ impl TarsierApp {
                                 {
                                     let pts = points_between(last_post, correct_pos);
                                     for p in pts {
+                                        #[allow(clippy::cast_sign_loss)]
                                         self.draw_point(p.x as u32, p.y as u32);
                                     }
                                 } else {
+                                    #[allow(clippy::cast_sign_loss)]
                                     self.draw_point(correct_pos.x as u32, correct_pos.y as u32);
                                 }
                                 if let Some(document) = self.documents.get_current_doc_mut() {
@@ -155,6 +157,7 @@ impl TarsierApp {
                                     pos.y.round().clamp(0.0, size[1] as f32),
                                 );
                                 #[allow(clippy::cast_possible_truncation)]
+                                #[allow(clippy::cast_sign_loss)]
                                 self.draw_point(correct_pos.x as u32, correct_pos.y as u32);
                                 if let Some(document) = self.documents.get_current_doc_mut() {
                                     document.selection.last_drawing_point = None;

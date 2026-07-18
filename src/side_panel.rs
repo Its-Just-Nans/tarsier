@@ -1,6 +1,6 @@
 //! Side panel
 
-use bladvak::eframe::egui::{self, Color32, Pos2};
+use bladvak::eframe::egui::{self, Pos2};
 use bladvak::egui_extras::{Column, TableBuilder};
 use bladvak::errors::{AppError, ErrorManager};
 use image::{ColorType, DynamicImage, GenericImage, GenericImageView, Pixel, imageops::FilterType};
