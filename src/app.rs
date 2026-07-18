@@ -7,7 +7,7 @@ use bladvak::{
 use bladvak::{
     eframe::{
         CreationContext,
-        egui::{self, Color32, Image, ImageSource},
+        egui::{self, Color32},
     },
     utils::grid::Grid,
     utils::is_native,
@@ -48,15 +48,28 @@ impl Default for NewImage {
 }
 
 /// App settings
-#[derive(serde::Deserialize, serde::Serialize, Debug, Default)]
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub(crate) struct AppSettings {
     /// remove selection
     pub(crate) remove_selection_after_op: bool,
+    /// selection color
+    pub(crate) color_selection: Color32,
     /// Image infos as windows
     pub(crate) image_info_as_window: bool,
     /// New image settings
     #[serde(skip)]
     pub(crate) new_image: NewImage,
+}
+
+impl Default for AppSettings {
+    fn default() -> Self {
+        Self {
+            remove_selection_after_op: false,
+            color_selection: Color32::from_black_alpha(50),
+            image_info_as_window: false,
+            new_image: NewImage::default(),
+        }
+    }
 }
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
@@ -114,9 +127,6 @@ impl TarsierApp {
         (img, cursor)
     }
 
-    /// Crop icon
-    const CROP_ICON: ImageSource<'_> = egui::include_image!("../assets/icon_crop.png");
-
     /// Cursor ui
     pub(crate) fn cursor_ui(&mut self, ui: &mut egui::Ui) {
         let Some(document) = self.documents.get_current_doc_mut() else {
@@ -132,84 +142,7 @@ impl TarsierApp {
                 self.mode.drawing.show(ui, max_radius);
             }
             EditMode::Selection => {
-                let mut reset_rect = false;
-                match &mut document.selection.rectangle {
-                    Some(rect) => {
-                        if ui
-                            .label(format!(
-                                "Selection: {:.0}x{:.0}",
-                                (rect.max.x - rect.min.x).abs(),
-                                (rect.max.y - rect.min.y).abs()
-                            ))
-                            .on_hover_text("Click to clear selection")
-                            .clicked()
-                        {
-                            reset_rect = true;
-                        }
-                        let width = rect.width().abs();
-                        let height = rect.height().abs();
-                        ui.label(format!("Width: {width:.0}"));
-                        ui.label(format!("Height: {height:.0}"));
-                        let right = rect.right();
-                        let bottom = rect.bottom();
-                        let left = rect.left();
-                        let top = rect.top();
-                        #[allow(clippy::cast_precision_loss)]
-                        ui.horizontal(|ui| {
-                            ui.label("Min: ");
-                            ui.add(egui::DragValue::new(rect.left_mut()).range(0.0..=right));
-                            ui.add(egui::DragValue::new(rect.top_mut()).range(0.0..=bottom));
-                        });
-                        #[allow(clippy::cast_precision_loss)]
-                        ui.horizontal(|ui| {
-                            ui.label("Max: ");
-                            ui.add(
-                                egui::DragValue::new(rect.right_mut())
-                                    .range(left..=(document.img.width() as f32)),
-                            );
-                            ui.add(
-                                egui::DragValue::new(rect.bottom_mut())
-                                    .range(top..=(document.img.height() as f32)),
-                            );
-                        });
-                    }
-                    None => {
-                        ui.label("No selection");
-                    }
-                }
-                if reset_rect {
-                    document.selection.rectangle = None;
-                }
-                if let Some(selection) = document.selection.rectangle {
-                    let icon_image = Image::new(Self::CROP_ICON);
-                    let icon = if ui.ctx().global_style().visuals.dark_mode {
-                        icon_image
-                    } else {
-                        icon_image.tint(Color32::BLACK)
-                    };
-                    #[allow(clippy::cast_sign_loss)]
-                    #[allow(clippy::cast_possible_truncation)]
-                    if ui
-                        .add(egui::Button::image_and_text(icon, "Crop"))
-                        .on_hover_text("Crop the image")
-                        .clicked()
-                    {
-                        let min_pos = selection.min;
-                        let max_pos = selection.max;
-                        let min_x = min_pos.x as u32;
-                        let min_y = min_pos.y as u32;
-                        let max_x = max_pos.x as u32;
-                        let max_y = max_pos.y as u32;
-                        let cropped_img =
-                            document
-                                .img
-                                .crop_imm(min_x, min_y, max_x - min_x, max_y - min_y);
-                        self.update_image(cropped_img);
-                        if let Some(document) = self.documents.get_current_doc_mut() {
-                            document.selection.rectangle = None;
-                        }
-                    }
-                }
+                self.selection_ui(ui);
             }
         }
     }

@@ -112,6 +112,10 @@ impl BladvakPanel for CursorInfo {
             &mut app.settings.remove_selection_after_op,
             "Remove selection after change",
         );
+        ui.horizontal(|ui| {
+            ui.label("Color selection");
+            ui.color_edit_button_srgba(&mut app.settings.color_selection);
+        });
     }
 
     fn has_ui(&self) -> bool {

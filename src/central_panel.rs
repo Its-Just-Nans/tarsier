@@ -196,7 +196,7 @@ impl TarsierApp {
                             Pos2::new(size[0] as f32 + min_pos.x, rect_selection.min.y),
                         ),
                         0.0,
-                        Color32::from_black_alpha(50),
+                        self.settings.color_selection,
                     );
                     // rect below selection
                     painter.rect_filled(
@@ -205,7 +205,7 @@ impl TarsierApp {
                             Pos2::new(size[0] as f32 + min_pos.x, size[1] as f32 + min_pos.y),
                         ),
                         0.0,
-                        Color32::from_black_alpha(50),
+                        self.settings.color_selection,
                     );
                     // rect left of selection
                     painter.rect_filled(
@@ -214,7 +214,7 @@ impl TarsierApp {
                             Pos2::new(rect_selection.min.x, rect_selection.max.y),
                         ),
                         0.0,
-                        Color32::from_black_alpha(50),
+                        self.settings.color_selection,
                     );
                     // rect right of selection
                     painter.rect_filled(
@@ -223,7 +223,7 @@ impl TarsierApp {
                             Pos2::new(size[0] as f32 + min_pos.x, rect_selection.max.y),
                         ),
                         0.0,
-                        Color32::from_black_alpha(50),
+                        self.settings.color_selection,
                     );
                 }
             });

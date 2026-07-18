@@ -25,6 +25,7 @@ mod document;
 mod edit_mode;
 mod operations;
 mod panels;
+mod selection;
 mod side_panel;
 mod top_panel;
 
