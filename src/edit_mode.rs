@@ -111,10 +111,6 @@ pub struct SelectionState {
     #[serde(skip)]
     pub last_drawing_point: Option<egui::Pos2>,
 
-    /// Is currently selecting
-    #[serde(skip)]
-    pub is_selecting: bool,
-
     /// Selection as windows
     pub cursor_op_as_window: bool,
 
@@ -129,7 +125,6 @@ impl Default for SelectionState {
             cursor_op_as_window: false,
             start_selection: egui::Pos2::ZERO,
             last_drawing_point: None,
-            is_selecting: false,
             remove_selection_after_op: false,
         }
     }

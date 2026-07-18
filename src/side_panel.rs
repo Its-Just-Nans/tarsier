@@ -1,6 +1,6 @@
 //! Side panel
 
-use bladvak::eframe::egui;
+use bladvak::eframe::egui::{self, Pos2};
 use bladvak::egui_extras::{Column, TableBuilder};
 use bladvak::errors::{AppError, ErrorManager};
 use image::{ColorType, DynamicImage, GenericImage, GenericImageView, Pixel, imageops::FilterType};
@@ -441,12 +441,20 @@ impl TarsierApp {
                         && x < i32::try_from(document.img.width()).unwrap_or(i32::MAX)
                         && y < i32::try_from(document.img.height()).unwrap_or(i32::MAX)
                     {
+                        #[allow(clippy::cast_precision_loss)]
+                        if let Some(rect) = document.selection.rectangle
+                            && !rect.contains(Pos2::new(x as f32, y as f32))
+                        {
+                            continue;
+                        }
+                        let x = x as u32;
+                        let y = y as u32;
                         if drawing.drawing_blend {
-                            let mut current_pixel = document.img.get_pixel(x as u32, y as u32);
+                            let mut current_pixel = document.img.get_pixel(x, y);
                             current_pixel.blend(&color);
-                            document.img.put_pixel(x as u32, y as u32, current_pixel);
+                            document.img.put_pixel(x, y, current_pixel);
                         } else {
-                            document.img.put_pixel(x as u32, y as u32, color);
+                            document.img.put_pixel(x, y, color);
                         }
                     }
                 }

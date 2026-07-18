@@ -90,9 +90,6 @@ impl TarsierApp {
 
                 if response.dragged() {
                     if let Some(pos) = response.interact_pointer_pos() {
-                        if !document.selection.is_selecting {
-                            document.selection.rectangle = None;
-                        }
                         let pos =
                             pos - Vec2::new(ecart_x - viewport.min.x, ecart_y - viewport.min.y);
                         let correct_pos = Pos2::new(
@@ -114,7 +111,6 @@ impl TarsierApp {
                                         document.selection.start_selection = correct_pos;
                                         Some(egui::Rect::from_two_pos(correct_pos, correct_pos))
                                     };
-                                document.selection.is_selecting = true;
                             }
                             EditMode::Drawing => {
                                 #[allow(clippy::cast_possible_truncation)]
@@ -135,7 +131,6 @@ impl TarsierApp {
                         }
                     }
                 } else {
-                    document.selection.is_selecting = false;
                     document.selection.last_drawing_point = None;
                 }
                 let Some(document) = self.documents.get_current_doc_mut() else {
@@ -143,7 +138,7 @@ impl TarsierApp {
                 };
 
                 if response.clicked() {
-                    document.selection.rectangle = None;
+                    // document.selection.rectangle = None;
                     match self.mode.current {
                         EditMode::Cursor => {
                             // do nothing
@@ -187,7 +182,7 @@ impl TarsierApp {
                         rect_selection,
                         0.0,
                         egui::Stroke::new(1.0, Color32::BLACK),
-                        egui::StrokeKind::Outside,
+                        egui::StrokeKind::Middle,
                     );
                     // rect above selection
                     painter.rect_filled(

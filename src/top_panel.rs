@@ -173,7 +173,7 @@ impl TarsierApp {
             ui.selectable_value(&mut self.mode.current, EditMode::Drawing, "Drawing");
             if self.mode.current != previous_state {
                 ui.close();
-                if self.mode.current != EditMode::Selection {
+                if self.mode.current == EditMode::Cursor {
                     document.selection.rectangle = None;
                 }
             }
