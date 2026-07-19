@@ -1,10 +1,9 @@
 //! Top panel
 use bladvak::eframe::egui::{self, Color32, TextFormat, text::LayoutJob};
 use bladvak::errors::ErrorManager;
-use bladvak::{BladvakApp, File};
 use image::ImageFormat;
 use std::io::Cursor;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use crate::document::Document;
 use crate::{TarsierApp, edit_mode::EditMode};
@@ -72,35 +71,10 @@ impl TarsierApp {
                 error_manager.add_error(e);
             }
 
-            if ui.button("Paste").clicked() {
-                #[cfg(target_arch = "wasm32")]
-                {
-                    if let Err(err) = self.clipboard.launch_get_file() {
-                        error_manager.add_error(err);
-                    }
-                }
-                #[cfg(not(target_arch = "wasm32"))]
-                {
-                    match bladvak::utils::get_image_from_clipboard() {
-                        Ok((width, height, rgba_data)) => {
-                            #[allow(clippy::cast_possible_truncation)]
-                            if let Some(buffer) =
-                                image::ImageBuffer::from_raw(width as u32, height as u32, rgba_data)
-                            {
-                                use std::path::PathBuf;
-
-                                let img = image::DynamicImage::ImageRgba8(buffer);
-                                self.new_file(PathBuf::from("pasted.png"), img, None);
-                            } else {
-                                error_manager
-                                    .add_error("Invalid image data from clipboard".to_string());
-                            }
-                        }
-                        Err(e) => {
-                            error_manager.add_error(e);
-                        }
-                    }
-                }
+            if ui.button("Paste").clicked()
+                && let Err(err) = self.clipboard.launch_get_image()
+            {
+                error_manager.add_error(err);
             }
         });
     }
@@ -140,22 +114,18 @@ impl TarsierApp {
 
     /// Show the top panel
     pub(crate) fn app_top_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
-        match self.clipboard.files(ui.ctx()) {
-            Some(Ok(files_list)) => {
-                if let Some(file) = files_list.into_iter().nth(0) {
-                    match file.get_data() {
-                        Ok(d) => {
-                            if let Err(err) = self.handle_file(File {
-                                path: PathBuf::from("imported.png"),
-                                data: d,
-                            }) {
-                                error_manager.add_error(err);
-                            }
-                        }
-                        Err(err) => {
-                            error_manager.add_error(err);
-                        }
-                    }
+        match self.clipboard.image(ui.ctx()) {
+            Some(Ok((rgba_data, width, height))) => {
+                #[allow(clippy::cast_possible_truncation)]
+                if let Some(buffer) =
+                    image::ImageBuffer::from_raw(width as u32, height as u32, rgba_data)
+                {
+                    use std::path::PathBuf;
+
+                    let img = image::DynamicImage::ImageRgba8(buffer);
+                    self.new_file(PathBuf::from("pasted.png"), img, None);
+                } else {
+                    error_manager.add_error("Invalid image data from clipboard".to_string());
                 }
             }
             Some(Err(err)) => {
