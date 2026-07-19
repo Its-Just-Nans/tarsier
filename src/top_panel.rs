@@ -1,10 +1,10 @@
 //! Top panel
 use bladvak::eframe::egui::{self, Color32, TextFormat, text::LayoutJob};
 use bladvak::errors::ErrorManager;
-use bladvak::utils::is_web;
+use bladvak::{BladvakApp, File};
 use image::ImageFormat;
 use std::io::Cursor;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::document::Document;
 use crate::{TarsierApp, edit_mode::EditMode};
@@ -58,13 +58,8 @@ impl TarsierApp {
     /// Show the clipboard menu
     pub fn menu_clipboard(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
         let is_document = self.documents.is_some();
-        #[cfg(target_arch = "wasm32")]
-        if !is_document {
-            return;
-        }
         ui.menu_button("Clipboard", |ui| {
-            let show_copy = if is_web() { true } else { is_document };
-            if show_copy
+            if is_document
                 && ui.button("Copy").clicked()
                 && let Some(document) = self.documents.get_current_doc_mut()
                 && let Err(e) = bladvak::utils::set_image_in_clipboard(
@@ -77,27 +72,33 @@ impl TarsierApp {
                 error_manager.add_error(e);
             }
 
-            #[cfg(not(target_arch = "wasm32"))]
             if ui.button("Paste").clicked() {
-                match bladvak::utils::get_image_from_clipboard() {
-                    Ok((width, height, rgba_data)) => {
-                        #[allow(clippy::cast_possible_truncation)]
-                        if let Some(buffer) = image::ImageBuffer::from_raw(
-                            width as u32,
-                            height as u32,
-                            rgba_data.clone(),
-                        ) {
-                            use std::path::PathBuf;
-
-                            let img = image::DynamicImage::ImageRgba8(buffer);
-                            self.new_file(PathBuf::from("pasted.png"), img, None);
-                        } else {
-                            error_manager
-                                .add_error("Invalid image data from clipboard".to_string());
-                        }
+                #[cfg(target_arch = "wasm32")]
+                {
+                    if let Err(err) = self.clipboard.launch_get_file() {
+                        error_manager.add_error(err);
                     }
-                    Err(e) => {
-                        error_manager.add_error(e);
+                }
+                #[cfg(not(target_arch = "wasm32"))]
+                {
+                    match bladvak::utils::get_image_from_clipboard() {
+                        Ok((width, height, rgba_data)) => {
+                            #[allow(clippy::cast_possible_truncation)]
+                            if let Some(buffer) =
+                                image::ImageBuffer::from_raw(width as u32, height as u32, rgba_data)
+                            {
+                                use std::path::PathBuf;
+
+                                let img = image::DynamicImage::ImageRgba8(buffer);
+                                self.new_file(PathBuf::from("pasted.png"), img, None);
+                            } else {
+                                error_manager
+                                    .add_error("Invalid image data from clipboard".to_string());
+                            }
+                        }
+                        Err(e) => {
+                            error_manager.add_error(e);
+                        }
                     }
                 }
             }
@@ -138,7 +139,30 @@ impl TarsierApp {
     }
 
     /// Show the top panel
-    pub(crate) fn app_top_panel(&mut self, ui: &mut egui::Ui, _error_manager: &mut ErrorManager) {
+    pub(crate) fn app_top_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
+        match self.clipboard.files(ui.ctx()) {
+            Some(Ok(files_list)) => {
+                if let Some(file) = files_list.into_iter().nth(0) {
+                    match file.get_data() {
+                        Ok(d) => {
+                            if let Err(err) = self.handle_file(File {
+                                path: PathBuf::from("imported.png"),
+                                data: d,
+                            }) {
+                                error_manager.add_error(err);
+                            }
+                        }
+                        Err(err) => {
+                            error_manager.add_error(err);
+                        }
+                    }
+                }
+            }
+            Some(Err(err)) => {
+                error_manager.add_error(err);
+            }
+            None => {}
+        }
         let Some(document) = self.documents.get_current_doc_mut() else {
             return;
         };

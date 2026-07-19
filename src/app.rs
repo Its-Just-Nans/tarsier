@@ -3,6 +3,7 @@ use bladvak::{
     File,
     app::BladvakApp,
     errors::{AppError, ErrorManager},
+    utils::BladvakClipBoard,
 };
 use bladvak::{
     eframe::{
@@ -87,6 +88,9 @@ pub struct TarsierApp {
     pub(crate) image_operations: ImageOperations,
     /// Grid options
     pub(crate) grid: Grid,
+    /// clipboard
+    #[serde(skip)]
+    pub(crate) clipboard: BladvakClipBoard,
 }
 
 impl Default for TarsierApp {
@@ -106,6 +110,7 @@ impl Default for TarsierApp {
             image_operations: ImageOperations::default(),
             settings: AppSettings::default(),
             grid: Grid::default(),
+            clipboard: BladvakClipBoard::default(),
         }
     }
 }
