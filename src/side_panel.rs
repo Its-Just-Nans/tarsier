@@ -4,6 +4,7 @@ use bladvak::eframe::egui::{self, Pos2};
 use bladvak::egui_extras::{Column, TableBuilder};
 use bladvak::errors::{AppError, ErrorManager};
 use image::{ColorType, DynamicImage, GenericImage, GenericImageView, Pixel, imageops::FilterType};
+use imageproc::filter::median_filter;
 use std::sync::Arc;
 
 use crate::TarsierApp;
@@ -217,13 +218,10 @@ impl TarsierApp {
             );
         }
         ui.separator();
-        let Some(document) = self.documents.get_current_doc_mut() else {
-            return;
-        };
         if ui.button("Grayscale").clicked() {
-            let color = document.img.color();
             self.apply_op(
                 |img| {
+                    let color = img.color();
                     let inner = img.grayscale();
                     match color {
                         ColorType::L8 => inner.to_luma8().into(),
@@ -245,6 +243,8 @@ impl TarsierApp {
         self.show_resize(ui, error_manager);
         ui.separator();
         self.show_channels(ui, error_manager);
+        ui.separator();
+        self.show_median_filter(ui, error_manager);
     }
 
     /// show basic operations
@@ -295,6 +295,21 @@ impl TarsierApp {
         if ui.button("contrast").clicked() {
             let contrast = self.image_operations.contrast;
             self.apply_op(|img| img.adjust_contrast(contrast), error_manager);
+        }
+    }
+
+    /// show median filter
+    fn show_median_filter(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
+        if ui.button("Median filter").clicked() {
+            let radius = 3;
+            self.apply_op(
+                |img| {
+                    let inner = img.to_luma8();
+                    let inner = median_filter(&inner, radius, radius);
+                    DynamicImage::ImageLuma8(inner)
+                },
+                error_manager,
+            );
         }
     }
 
