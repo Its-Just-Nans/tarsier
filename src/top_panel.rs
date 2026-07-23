@@ -162,9 +162,26 @@ impl TarsierApp {
         );
         ui.menu_button(job, |ui| {
             let previous_state = self.mode.current;
-            ui.selectable_value(&mut self.mode.current, EditMode::Cursor, "Cursor");
-            ui.selectable_value(&mut self.mode.current, EditMode::Selection, "Selection");
-            ui.selectable_value(&mut self.mode.current, EditMode::Drawing, "Drawing");
+            ui.selectable_value(
+                &mut self.mode.current,
+                EditMode::Cursor,
+                EditMode::Cursor.to_string(),
+            );
+            ui.selectable_value(
+                &mut self.mode.current,
+                EditMode::Selection,
+                EditMode::Selection.to_string(),
+            );
+            ui.selectable_value(
+                &mut self.mode.current,
+                EditMode::Drawing,
+                EditMode::Drawing.to_string(),
+            );
+            ui.selectable_value(
+                &mut self.mode.current,
+                EditMode::ColorSelection,
+                EditMode::ColorSelection.to_string(),
+            );
             if self.mode.current != previous_state {
                 ui.close();
                 if self.mode.current == EditMode::Cursor {

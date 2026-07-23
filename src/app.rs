@@ -149,6 +149,11 @@ impl TarsierApp {
             EditMode::Selection => {
                 self.selection_ui(ui);
             }
+            EditMode::ColorSelection => {
+                let (x, y, color) = &mut self.mode.color_selection;
+                ui.label(format!("x = {}, y = {} = {:?}", x, y, color.to_array()));
+                ui.color_edit_button_srgba(color);
+            }
         }
     }
 

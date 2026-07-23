@@ -4,6 +4,7 @@ use bladvak::eframe::egui::{
 };
 use bladvak::errors::ErrorManager;
 use image::DynamicImage;
+use imageproc::drawing::Canvas;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -97,7 +98,7 @@ impl TarsierApp {
                             pos.y.round().clamp(0.0, size[1] as f32),
                         );
                         match self.mode.current {
-                            EditMode::Cursor => {
+                            EditMode::Cursor | EditMode::ColorSelection => {
                                 // no nothing
                             }
                             EditMode::Selection => {
@@ -161,6 +162,24 @@ impl TarsierApp {
                                 self.draw_point(correct_pos.x as u32, correct_pos.y as u32);
                                 if let Some(document) = self.documents.get_current_doc_mut() {
                                     document.selection.last_drawing_point = None;
+                                }
+                            }
+                        }
+                        #[allow(clippy::cast_possible_truncation)]
+                        #[allow(clippy::cast_sign_loss)]
+                        EditMode::ColorSelection => {
+                            if let Some(pos) = response.interact_pointer_pos()
+                                && let Some(document) = self.documents.get_current_doc_mut()
+                            {
+                                let x = pos.x.floor() as u32;
+                                let y = pos.y.floor() as u32;
+                                if x < document.img.width() && y < document.img.height() {
+                                    let c = document.img.get_pixel(x, y);
+                                    self.mode.color_selection = (
+                                        x,
+                                        y,
+                                        Color32::from_rgba_unmultiplied(c[0], c[1], c[2], c[3]),
+                                    );
                                 }
                             }
                         }

@@ -1,6 +1,6 @@
 //! Edition mode
 
-use bladvak::eframe::egui;
+use bladvak::eframe::egui::{self, Color32};
 
 /// Drawing mode
 #[derive(serde::Deserialize, serde::Serialize, PartialEq, Debug, Clone, Copy)]
@@ -64,6 +64,8 @@ pub(crate) struct Mode {
     pub(crate) current: EditMode,
     /// drawing mode
     pub(crate) drawing: DrawingMode,
+    /// color selection
+    pub(crate) color_selection: (u32, u32, Color32),
 }
 
 impl Default for Mode {
@@ -71,6 +73,7 @@ impl Default for Mode {
         Self {
             current: EditMode::Cursor,
             drawing: DrawingMode::default(),
+            color_selection: (0, 0, Color32::ORANGE),
         }
     }
 }
@@ -84,6 +87,8 @@ pub(crate) enum EditMode {
     Selection,
     /// Drawing mode
     Drawing,
+    /// Color selection
+    ColorSelection,
 }
 
 impl std::fmt::Display for EditMode {
@@ -92,6 +97,7 @@ impl std::fmt::Display for EditMode {
             EditMode::Cursor => write!(f, "Cursor"),
             EditMode::Selection => write!(f, "Selection"),
             EditMode::Drawing => write!(f, "Drawing"),
+            EditMode::ColorSelection => write!(f, "Color selection"),
         }
     }
 }
