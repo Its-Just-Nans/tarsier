@@ -225,7 +225,7 @@ impl BladvakApp<'_> for TarsierApp {
             }
         };
         let cursor = Cursor::new(file.data.as_ref());
-        self.new_file(PathBuf::from("dropped.png"), img, Some(cursor));
+        self.new_file(file.path, img, Some(cursor));
         Ok(())
     }
 

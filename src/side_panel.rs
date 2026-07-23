@@ -240,6 +240,15 @@ impl TarsierApp {
             );
         }
         ui.separator();
+        self.show_basic_ops(ui, error_manager);
+        ui.separator();
+        self.show_resize(ui, error_manager);
+        ui.separator();
+        self.show_channels(ui, error_manager);
+    }
+
+    /// show basic operations
+    pub(crate) fn show_basic_ops(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
         if ui.button("invert").clicked() {
             self.apply_op(
                 |img| {
@@ -287,8 +296,63 @@ impl TarsierApp {
             let contrast = self.image_operations.contrast;
             self.apply_op(|img| img.adjust_contrast(contrast), error_manager);
         }
-        ui.separator();
-        self.show_resize(ui, error_manager);
+    }
+
+    /// show channels
+    fn show_channels(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
+        ui.collapsing("Channels", |ui| {
+            if ui.button("Red").clicked() {
+                self.apply_op(
+                    |img| -> DynamicImage {
+                        let mut c = img.clone();
+                        for x in 0..c.width() {
+                            for y in 0..c.height() {
+                                let mut px = c.get_pixel(x, y);
+                                px.channels_mut()[1] = 0;
+                                px.channels_mut()[2] = 0;
+                                c.put_pixel(x, y, px);
+                            }
+                        }
+                        c
+                    },
+                    error_manager,
+                );
+            }
+            if ui.button("Green").clicked() {
+                self.apply_op(
+                    |img| -> DynamicImage {
+                        let mut c = img.clone();
+                        for x in 0..c.width() {
+                            for y in 0..c.height() {
+                                let mut px = c.get_pixel(x, y);
+                                px.channels_mut()[0] = 0;
+                                px.channels_mut()[2] = 0;
+                                c.put_pixel(x, y, px);
+                            }
+                        }
+                        c
+                    },
+                    error_manager,
+                );
+            }
+            if ui.button("Blue").clicked() {
+                self.apply_op(
+                    |img| -> DynamicImage {
+                        let mut c = img.clone();
+                        for x in 0..c.width() {
+                            for y in 0..c.height() {
+                                let mut px = c.get_pixel(x, y);
+                                px.channels_mut()[0] = 0;
+                                px.channels_mut()[1] = 0;
+                                c.put_pixel(x, y, px);
+                            }
+                        }
+                        c
+                    },
+                    error_manager,
+                );
+            }
+        });
     }
 
     /// show resize ui
