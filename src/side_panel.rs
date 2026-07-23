@@ -328,7 +328,10 @@ impl TarsierApp {
             &mut self.image_operations.cut_tolerance,
             0..=254,
         ));
-        ui.color_edit_button_srgba(&mut self.image_operations.cut_color);
+        let [r, g, b, _r] = self.image_operations.cut_color.to_array();
+        let mut color = [r, g, b];
+        ui.color_edit_button_srgb(&mut color);
+        self.image_operations.cut_color = Color32::from_rgb(color[0], color[1], color[2]);
         if ui.button("Cut color").clicked() {
             let tolerance = self.image_operations.cut_tolerance;
             let target = self.image_operations.cut_color.to_array();
