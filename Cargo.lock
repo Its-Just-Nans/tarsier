@@ -634,9 +634,9 @@ dependencies = [
 
 [[package]]
 name = "bladvak"
-version = "1.3.17"
+version = "1.3.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ebb904341740e0e59620c91ecce9783b23010f2dbfdd04e4b26d63e5d103d308"
+checksum = "c96559fb321cb6b40949aceaf59ef52888ba094f170548e481a7d9bce88025a6"
 dependencies = [
  "arboard",
  "eframe",
