@@ -1,8 +1,9 @@
 //! Side panel
 
-use bladvak::eframe::egui::{self, Pos2};
+use bladvak::eframe::egui::{self, Color32, Pos2};
 use bladvak::egui_extras::{Column, TableBuilder};
 use bladvak::errors::{AppError, ErrorManager};
+use image::Rgba;
 use image::{ColorType, DynamicImage, GenericImage, GenericImageView, Pixel, imageops::FilterType};
 use imageproc::filter::median_filter;
 use std::sync::Arc;
@@ -63,6 +64,10 @@ pub(crate) struct ImageOperations {
     /// resize
     #[serde(skip)]
     pub(crate) resize: Resize,
+    /// cut color
+    cut_color: egui::Color32,
+    /// tolerance
+    cut_tolerance: i16,
 }
 
 impl Default for ImageOperations {
@@ -74,6 +79,8 @@ impl Default for ImageOperations {
             contrast: 1.0,
             other: Others::default(),
             resize: Resize::default(),
+            cut_color: Color32::from_rgb_additive(50, 50, 50),
+            cut_tolerance: i16::MAX,
         }
     }
 }
@@ -245,6 +252,8 @@ impl TarsierApp {
         self.show_channels(ui, error_manager);
         ui.separator();
         self.show_median_filter(ui, error_manager);
+        ui.separator();
+        self.show_cut_color(ui, error_manager);
     }
 
     /// show basic operations
@@ -307,6 +316,41 @@ impl TarsierApp {
                     let inner = img.to_luma8();
                     let inner = median_filter(&inner, radius, radius);
                     DynamicImage::ImageLuma8(inner)
+                },
+                error_manager,
+            );
+        }
+    }
+
+    /// show cut color
+    fn show_cut_color(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
+        ui.add(egui::Slider::new(
+            &mut self.image_operations.cut_tolerance,
+            0..=254,
+        ));
+        ui.color_edit_button_srgba(&mut self.image_operations.cut_color);
+        if ui.button("Cut color").clicked() {
+            let tolerance = self.image_operations.cut_tolerance;
+            let target = self.image_operations.cut_color.to_array();
+            self.apply_op(
+                |img| {
+                    let mut res = img.clone().to_rgba8();
+                    for (x, y, pixel) in img.pixels() {
+                        let [r, g, b, a] = pixel.0;
+                        let diff_r = (i16::from(r) - i16::from(target[0])).abs();
+                        let diff_g = (i16::from(g) - i16::from(target[1])).abs();
+                        let diff_b = (i16::from(b) - i16::from(target[2])).abs();
+                        let matches =
+                            diff_r <= tolerance && diff_b <= tolerance && diff_g <= tolerance;
+
+                        let color = if matches {
+                            Rgba([r, g, b, 0]) // transparent
+                        } else {
+                            Rgba([r, g, b, a])
+                        };
+                        res.put_pixel(x, y, color);
+                    }
+                    DynamicImage::ImageRgba8(res)
                 },
                 error_manager,
             );
@@ -443,7 +487,22 @@ impl TarsierApp {
                 selection.2 - selection.0,
                 selection.3 - selection.1,
             );
+            let img_color = document.img.color();
             let inner = func(&cropped_img);
+            let new_color = inner.color();
+            if new_color != img_color {
+                document.img = match new_color {
+                    ColorType::L8 => document.img.to_luma8().into(),
+                    ColorType::L16 => document.img.to_luma16().into(),
+                    ColorType::La8 => document.img.to_luma_alpha8().into(),
+                    ColorType::La16 => document.img.to_luma_alpha16().into(),
+                    ColorType::Rgb8 => document.img.to_rgb8().into(),
+                    ColorType::Rgb16 => document.img.to_rgb16().into(),
+                    ColorType::Rgba16 => document.img.to_rgba16().into(),
+                    ColorType::Rgba8 | _ => document.img.to_rgba8().into(),
+                };
+            }
+
             if let Err(e) = document.img.copy_from(&inner, selection.0, selection.1) {
                 error_manager.add_error(AppError::new_with_source(
                     "Cannot update selected image part",
