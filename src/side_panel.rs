@@ -598,6 +598,24 @@ impl TarsierApp {
             return;
         };
         let radius = self.mode.drawing.pen_radius;
+        if radius == 1 {
+            #[allow(clippy::cast_precision_loss)]
+            if let Some(rect) = document.selection.rectangle
+                && !rect.contains(Pos2::new(x_center as f32, y_center as f32))
+            {
+                return;
+            }
+            draw_single_point(
+                document,
+                x_center,
+                y_center,
+                self.mode.drawing.pen_color,
+                self.mode.drawing.drawing_blend,
+            );
+            self.updated_image();
+            return;
+        }
+        let radius = radius.saturating_sub(1);
         let min_y = y_center.saturating_sub(radius);
         for y in min_y..=(y_center + radius) {
             let min_x = x_center.saturating_sub(radius);
