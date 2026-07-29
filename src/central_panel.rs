@@ -94,8 +94,8 @@ impl TarsierApp {
                         let pos =
                             pos - Vec2::new(ecart_x - viewport.min.x, ecart_y - viewport.min.y);
                         let correct_pos = Pos2::new(
-                            pos.x.round().clamp(0.0, size[0] as f32),
-                            pos.y.round().clamp(0.0, size[1] as f32),
+                            pos.x.floor().clamp(0.0, size[0] as f32),
+                            pos.y.floor().clamp(0.0, size[1] as f32),
                         );
                         match self.mode.current {
                             EditMode::Cursor => {
@@ -159,8 +159,8 @@ impl TarsierApp {
                                 let pos = pos
                                     - Vec2::new(ecart_x - viewport.min.x, ecart_y - viewport.min.y);
                                 let correct_pos = Pos2::new(
-                                    pos.x.round().clamp(0.0, size[0] as f32),
-                                    pos.y.round().clamp(0.0, size[1] as f32),
+                                    pos.x.floor().clamp(0.0, size[0] as f32),
+                                    pos.y.floor().clamp(0.0, size[1] as f32),
                                 );
                                 #[allow(clippy::cast_possible_truncation)]
                                 #[allow(clippy::cast_sign_loss)]
