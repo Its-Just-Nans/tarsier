@@ -244,16 +244,18 @@ impl TarsierApp {
                 error_manager,
             );
         }
-        ui.separator();
-        self.show_basic_ops(ui, error_manager);
-        ui.separator();
-        self.show_resize(ui, error_manager);
-        ui.separator();
-        self.show_channels(ui, error_manager);
-        ui.separator();
-        self.show_median_filter(ui, error_manager);
-        ui.separator();
-        self.show_cut_color(ui, error_manager);
+        egui::ScrollArea::vertical().show(ui, |ui| {
+            ui.separator();
+            self.show_basic_ops(ui, error_manager);
+            ui.separator();
+            self.show_resize(ui, error_manager);
+            ui.separator();
+            self.show_channels(ui, error_manager);
+            ui.separator();
+            self.show_median_filter(ui, error_manager);
+            ui.separator();
+            self.show_cut_color(ui, error_manager);
+        });
     }
 
     /// show basic operations
@@ -269,38 +271,57 @@ impl TarsierApp {
             );
         }
         ui.separator();
-        ui.add(egui::Slider::new(
-            &mut self.image_operations.blur,
-            0.0..=100.0,
-        ));
+        bladvak::log::error!("{}", ui.available_width());
+        if ui.available_width() > 205.0 {
+            ui.add(egui::Slider::new(
+                &mut self.image_operations.blur,
+                0.0..=100.0,
+            ));
+        } else {
+            ui.add(egui::DragValue::new(&mut self.image_operations.blur).range(0.0..=100.0));
+        }
         if ui.button("Blur").clicked() {
             let blur = self.image_operations.blur;
             self.apply_op(|img| img.blur(blur), error_manager);
         }
         ui.separator();
-        ui.add(egui::Slider::new(
-            &mut self.image_operations.hue_rotation,
-            0..=360,
-        ));
-
+        if ui.available_width() > 205.0 {
+            ui.add(egui::Slider::new(
+                &mut self.image_operations.hue_rotation,
+                0..=360,
+            ));
+        } else {
+            ui.add(
+                egui::DragValue::new(&mut self.image_operations.hue_rotation).range(0.0..=100.0),
+            );
+        }
         if ui.button("hue rotate").clicked() {
             let hue_rotation = self.image_operations.hue_rotation;
             self.apply_op(|img| img.huerotate(hue_rotation), error_manager);
         }
         ui.separator();
-        ui.add(egui::Slider::new(
-            &mut self.image_operations.brighten,
-            -100..=100,
-        ));
+        if ui.available_width() > 205.0 {
+            ui.add(egui::Slider::new(
+                &mut self.image_operations.brighten,
+                -100..=100,
+            ));
+        } else {
+            ui.add(egui::DragValue::new(&mut self.image_operations.brighten).range(0.0..=100.0));
+        }
         if ui.button("brighten").clicked() {
             let brighten = self.image_operations.brighten;
             self.apply_op(|img| img.brighten(brighten), error_manager);
         }
         ui.separator();
-        ui.add(egui::Slider::new(
-            &mut self.image_operations.contrast,
-            -50.0..=50.0,
-        ));
+
+        if ui.available_width() > 205.0 {
+            ui.add(egui::Slider::new(
+                &mut self.image_operations.contrast,
+                -50.0..=50.0,
+            ));
+        } else {
+            ui.add(egui::DragValue::new(&mut self.image_operations.contrast).range(0.0..=100.0));
+        }
         if ui.button("contrast").clicked() {
             let contrast = self.image_operations.contrast;
             self.apply_op(|img| img.adjust_contrast(contrast), error_manager);
@@ -324,10 +345,16 @@ impl TarsierApp {
 
     /// show cut color
     fn show_cut_color(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
-        ui.add(egui::Slider::new(
-            &mut self.image_operations.cut_tolerance,
-            0..=254,
-        ));
+        if ui.available_width() > 205.0 {
+            ui.add(egui::Slider::new(
+                &mut self.image_operations.cut_tolerance,
+                0..=254,
+            ));
+        } else {
+            ui.add(
+                egui::DragValue::new(&mut self.image_operations.cut_tolerance).range(0.0..=100.0),
+            );
+        }
         let [r, g, b, _r] = self.image_operations.cut_color.to_array();
         let mut color = [r, g, b];
         ui.color_edit_button_srgb(&mut color);

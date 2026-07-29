@@ -20,14 +20,10 @@ impl TarsierApp {
         _error_manager: &mut ErrorManager,
     ) {
         let Some(document) = self.documents.get_current_doc_mut() else {
-            egui::Area::new("center".into())
-                .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
-                .show(ui.ctx(), |ui| {
-                    ui.vertical_centered(|ui| {
-                        ui.heading(concat!("Welcome to ", env!("CARGO_PKG_NAME")));
-                        ui.label("No document opened");
-                    });
-                });
+            bladvak::utils::central_ui(ui, |ui| {
+                ui.heading(concat!("Welcome to ", env!("CARGO_PKG_NAME")));
+                ui.label("No document opened");
+            });
             return;
         };
         let mut rect = document.scene_rect;
