@@ -4,7 +4,6 @@ use bladvak::eframe::egui::{
 };
 use bladvak::errors::ErrorManager;
 use image::DynamicImage;
-use imageproc::drawing::Canvas;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -54,6 +53,11 @@ impl TarsierApp {
                     Image::new((image_texture.id(), image_texture.size_vec2()))
                         .sense(Sense::click_and_drag()),
                 );
+                let response = if matches!(self.mode.current, EditMode::ColorSelection) {
+                    response.on_hover_cursor(egui::CursorIcon::Crosshair)
+                } else {
+                    response
+                };
                 let is_dark_theme = ui.ctx().global_style().visuals.dark_mode;
                 ui.painter().rect_stroke(
                     response.rect,
@@ -94,8 +98,13 @@ impl TarsierApp {
                             pos.y.round().clamp(0.0, size[1] as f32),
                         );
                         match self.mode.current {
-                            EditMode::Cursor | EditMode::ColorSelection => {
+                            EditMode::Cursor => {
                                 // no nothing
+                            }
+                            EditMode::ColorSelection => {
+                                if let Some(color) = document.get_color_at(pos) {
+                                    self.mode.color_selection = color;
+                                }
                             }
                             EditMode::Selection => {
                                 document.selection.rectangle =
@@ -161,22 +170,12 @@ impl TarsierApp {
                                 }
                             }
                         }
-                        #[allow(clippy::cast_possible_truncation)]
-                        #[allow(clippy::cast_sign_loss)]
                         EditMode::ColorSelection => {
                             if let Some(pos) = response.interact_pointer_pos()
                                 && let Some(document) = self.documents.get_current_doc_mut()
+                                && let Some(color) = document.get_color_at(pos)
                             {
-                                let x = pos.x.floor() as u32;
-                                let y = pos.y.floor() as u32;
-                                if x < document.img.width() && y < document.img.height() {
-                                    let c = document.img.get_pixel(x, y);
-                                    self.mode.color_selection = (
-                                        x,
-                                        y,
-                                        Color32::from_rgba_unmultiplied(c[0], c[1], c[2], c[3]),
-                                    );
-                                }
+                                self.mode.color_selection = color;
                             }
                         }
                     }

@@ -271,7 +271,6 @@ impl TarsierApp {
             );
         }
         ui.separator();
-        bladvak::log::error!("{}", ui.available_width());
         if ui.available_width() > 205.0 {
             ui.add(egui::Slider::new(
                 &mut self.image_operations.blur,

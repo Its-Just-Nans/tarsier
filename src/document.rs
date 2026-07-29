@@ -1,6 +1,6 @@
 //! Document
 
-use bladvak::eframe::egui;
+use bladvak::eframe::egui::{self, Color32};
 use bladvak::utils::document::DocumentTrait;
 use image::DynamicImage;
 use std::path::{Path, PathBuf};
@@ -56,5 +56,26 @@ impl Default for Document {
 impl DocumentTrait for Document {
     fn path(&self) -> &Path {
         &self.filename
+    }
+}
+
+impl Document {
+    /// Get the color at a position
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_sign_loss)]
+    pub(crate) fn get_color_at(&self, pos: egui::Pos2) -> Option<(u32, u32, Color32)> {
+        use image::GenericImageView;
+
+        let x = pos.x.floor() as u32;
+        let y = pos.y.floor() as u32;
+        if x < self.img.width() && y < self.img.height() {
+            let c = self.img.get_pixel(x, y);
+            return Some((
+                x,
+                y,
+                Color32::from_rgba_unmultiplied(c[0], c[1], c[2], c[3]),
+            ));
+        }
+        None
     }
 }
