@@ -46,7 +46,7 @@ impl TarsierApp {
                     ui.ctx().load_texture(
                         "img",
                         ImageData::Color(Arc::new(image)),
-                        TextureOptions::default(),
+                        TextureOptions::NEAREST,
                     )
                 });
                 let response = ui.add(
