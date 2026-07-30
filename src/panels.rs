@@ -76,6 +76,8 @@ impl BladvakPanel for ImageInfo {
         });
         app.grid.show_settings(ui);
         ui.separator();
+        ui.checkbox(&mut app.settings.drawing_sticky, "Drawing sticky cursor");
+        ui.separator();
         if ui.button("Default image").clicked() {
             let (img, cursor) = TarsierApp::load_default_image();
             app.new_file(PathBuf::from("tarsier.png"), img, Some(cursor));

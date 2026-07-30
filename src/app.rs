@@ -57,6 +57,8 @@ pub(crate) struct AppSettings {
     pub(crate) color_selection: Color32,
     /// Image infos as windows
     pub(crate) image_info_as_window: bool,
+    /// Drawing sticky
+    pub(crate) drawing_sticky: bool,
     /// New image settings
     #[serde(skip)]
     pub(crate) new_image: NewImage,
@@ -67,6 +69,7 @@ impl Default for AppSettings {
         Self {
             remove_selection_after_op: false,
             color_selection: Color32::from_black_alpha(50),
+            drawing_sticky: true,
             image_info_as_window: false,
             new_image: NewImage::default(),
         }

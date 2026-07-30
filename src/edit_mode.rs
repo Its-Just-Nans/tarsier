@@ -30,7 +30,7 @@ impl Default for DrawingMode {
 impl DrawingMode {
     /// Button to draw settings
     pub(crate) fn show(&mut self, ui: &mut egui::Ui, max_radius: u32) {
-        ui.add(egui::Slider::new(&mut self.pen_radius, 1..=max_radius / 4))
+        ui.add(egui::Slider::new(&mut self.pen_radius, 1..=max_radius / 6))
             .on_hover_text("Pen radius");
         let [r, g, b, a] = self.pen_color;
         let mut color = egui::Color32::from_rgba_premultiplied(r, g, b, a);

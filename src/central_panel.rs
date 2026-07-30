@@ -79,13 +79,22 @@ impl TarsierApp {
 
                 let painter = ui.painter();
                 if let EditMode::Drawing = self.mode.current
-                    && let Some(pos) = response.hover_pos()
+                    && let Some(mut pos) = response.hover_pos()
                 {
+                    if self.settings.drawing_sticky {
+                        pos.x = pos.x.floor() + 0.5;
+                        pos.y = pos.y.floor() + 0.5;
+                    }
+                    let stroke_size = if self.mode.drawing.pen_radius < 10 {
+                        0.25
+                    } else {
+                        1.0
+                    };
                     painter.circle(
                         pos,
-                        self.mode.drawing.pen_radius as f32,
+                        self.mode.drawing.pen_radius.saturating_sub(1) as f32 + 0.5,
                         Color32::TRANSPARENT,
-                        egui::Stroke::new(1.0, Color32::BLACK),
+                        egui::Stroke::new(stroke_size, Color32::BLACK),
                     );
                 }
 
@@ -199,7 +208,7 @@ impl TarsierApp {
                         rect_selection,
                         0.0,
                         egui::Stroke::new(1.0, Color32::BLACK),
-                        egui::StrokeKind::Middle,
+                        egui::StrokeKind::Outside,
                     );
                     // rect above selection
                     painter.rect_filled(
