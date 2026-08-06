@@ -1,6 +1,6 @@
 {
-    "name": "tarsier PWA",
-    "short_name": "tarsier-pwa",
+    "name": "tarsier",
+    "short_name": "tarsier",
     "icons": [
         {
             "src": "./assets/icon-256.png",

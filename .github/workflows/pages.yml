@@ -2,6 +2,7 @@ name: Github Pages
 
 # By default, runs if you push to main. keeps your deployed app in sync with main branch.
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
