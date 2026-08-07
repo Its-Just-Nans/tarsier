@@ -30,8 +30,14 @@ impl Default for DrawingMode {
 impl DrawingMode {
     /// Button to draw settings
     pub(crate) fn show(&mut self, ui: &mut egui::Ui, max_radius: u32) {
-        ui.add(egui::Slider::new(&mut self.pen_radius, 1..=max_radius / 6))
-            .on_hover_text("Pen radius");
+        let max_radius = (max_radius / 6).min(100);
+        if ui.available_width() > 205.0 {
+            ui.add(egui::Slider::new(&mut self.pen_radius, 0..=max_radius))
+                .on_hover_text("Pen radius");
+        } else {
+            ui.add(egui::DragValue::new(&mut self.pen_radius).range(0..=max_radius))
+                .on_hover_text("Pen radius");
+        }
         let [r, g, b, a] = self.pen_color;
         let mut color = egui::Color32::from_rgba_premultiplied(r, g, b, a);
         egui::color_picker::color_edit_button_srgba(
@@ -41,7 +47,7 @@ impl DrawingMode {
         )
         .on_hover_text("Pen color");
         self.pen_color = [color.r(), color.g(), color.b(), color.a()];
-        ui.horizontal(|ui| {
+        let pixel_modes_ui = |ui: &mut egui::Ui| {
             ui.label("Pixel mode:");
             if ui
                 .selectable_label(!self.drawing_blend, "Replace")
@@ -52,7 +58,12 @@ impl DrawingMode {
             if ui.selectable_label(self.drawing_blend, "Blend").clicked() {
                 self.drawing_blend = true;
             }
-        });
+        };
+        if ui.available_width() > 205.0 {
+            ui.horizontal(pixel_modes_ui);
+        } else {
+            ui.vertical(pixel_modes_ui);
+        }
         ui.checkbox(&mut self.drawing_continuous_line, "Continuous line");
     }
 }

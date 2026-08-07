@@ -290,9 +290,7 @@ impl TarsierApp {
                 0..=360,
             ));
         } else {
-            ui.add(
-                egui::DragValue::new(&mut self.image_operations.hue_rotation).range(0.0..=100.0),
-            );
+            ui.add(egui::DragValue::new(&mut self.image_operations.hue_rotation).range(0..=360));
         }
         if ui.button("hue rotate").clicked() {
             let hue_rotation = self.image_operations.hue_rotation;
@@ -305,7 +303,7 @@ impl TarsierApp {
                 -100..=100,
             ));
         } else {
-            ui.add(egui::DragValue::new(&mut self.image_operations.brighten).range(0.0..=100.0));
+            ui.add(egui::DragValue::new(&mut self.image_operations.brighten).range(-100.0..=100.0));
         }
         if ui.button("brighten").clicked() {
             let brighten = self.image_operations.brighten;
@@ -319,7 +317,7 @@ impl TarsierApp {
                 -50.0..=50.0,
             ));
         } else {
-            ui.add(egui::DragValue::new(&mut self.image_operations.contrast).range(0.0..=100.0));
+            ui.add(egui::DragValue::new(&mut self.image_operations.contrast).range(-50.0..=50.0));
         }
         if ui.button("contrast").clicked() {
             let contrast = self.image_operations.contrast;
@@ -347,12 +345,10 @@ impl TarsierApp {
         if ui.available_width() > 205.0 {
             ui.add(egui::Slider::new(
                 &mut self.image_operations.cut_tolerance,
-                0..=254,
+                0..=255,
             ));
         } else {
-            ui.add(
-                egui::DragValue::new(&mut self.image_operations.cut_tolerance).range(0.0..=100.0),
-            );
+            ui.add(egui::DragValue::new(&mut self.image_operations.cut_tolerance).range(0..=255));
         }
         let [r, g, b, _r] = self.image_operations.cut_color.to_array();
         let mut color = [r, g, b];
