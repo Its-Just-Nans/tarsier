@@ -599,12 +599,6 @@ impl TarsierApp {
         };
         let radius = self.mode.drawing.pen_radius;
         if radius == 1 {
-            #[allow(clippy::cast_precision_loss)]
-            if let Some(rect) = document.selection.rectangle
-                && !rect.contains(Pos2::new(x_center as f32, y_center as f32))
-            {
-                return;
-            }
             draw_single_point(
                 document,
                 x_center,
@@ -626,22 +620,13 @@ impl TarsierApp {
                     + y_center.saturating_sub(y).pow(2)
                     <= radius.pow(2)
                 {
-                    // Ensure pixel is within bounds
-                    if x < document.img.width() && y < document.img.height() {
-                        #[allow(clippy::cast_precision_loss)]
-                        if let Some(rect) = document.selection.rectangle
-                            && !rect.contains(Pos2::new(x as f32, y as f32))
-                        {
-                            continue;
-                        }
-                        draw_single_point(
-                            document,
-                            x,
-                            y,
-                            self.mode.drawing.pen_color,
-                            self.mode.drawing.drawing_blend,
-                        );
-                    }
+                    draw_single_point(
+                        document,
+                        x,
+                        y,
+                        self.mode.drawing.pen_color,
+                        self.mode.drawing.drawing_blend,
+                    );
                 }
             }
         }
@@ -657,13 +642,23 @@ fn draw_single_point(
     pen_color: [u8; 4],
     drawing_blend: bool,
 ) {
-    let color = image::Rgba(pen_color);
-    if drawing_blend {
-        let mut current_pixel = document.img.get_pixel(x, y);
-        current_pixel.blend(&color);
-        document.img.put_pixel(x, y, current_pixel);
-    } else {
-        document.img.put_pixel(x, y, color);
+    // Ensure pixel is within bounds
+    if x < document.img.width() && y < document.img.height() {
+        // Ensure pixel is within bounds of selection
+        #[allow(clippy::cast_precision_loss)]
+        if let Some(rect) = document.selection.rectangle
+            && !rect.contains(Pos2::new(x as f32, y as f32))
+        {
+            return;
+        }
+        let color = image::Rgba(pen_color);
+        if drawing_blend {
+            let mut current_pixel = document.img.get_pixel(x, y);
+            current_pixel.blend(&color);
+            document.img.put_pixel(x, y, current_pixel);
+        } else {
+            document.img.put_pixel(x, y, color);
+        }
     }
 }
 
