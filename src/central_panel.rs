@@ -26,6 +26,9 @@ impl TarsierApp {
             return;
         };
         let mut rect = document.scene_rect;
+        if rect.any_nan() {
+            return;
+        }
         egui::Scene::new()
             .zoom_range(0.0..=f32::INFINITY)
             .show(ui, &mut rect, |ui| {

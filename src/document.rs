@@ -48,7 +48,7 @@ impl Default for Document {
             exif: None,
             filename: PathBuf::new(),
             selection: SelectionState::default(),
-            scene_rect: egui::Rect::NAN,
+            scene_rect: egui::Rect::ZERO,
         }
     }
 }
@@ -56,6 +56,9 @@ impl Default for Document {
 impl DocumentTrait for Document {
     fn path(&self) -> &Path {
         &self.filename
+    }
+    fn set_path(&mut self, new_path: PathBuf) {
+        self.filename = new_path;
     }
 }
 
