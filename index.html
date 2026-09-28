@@ -9,7 +9,7 @@
     <title>tarsier</title>
 
     <!-- config for our rust wasm binary. go to https://trunkrs.dev/assets/#rust for more customization -->
-    <link data-trunk rel="rust" data-wasm-opt="2" />
+    <link data-trunk rel="rust" data-wasm-opt="2" data-initializer="assets/initializer.mjs" />
     <!-- this is the base url relative to which other urls will be constructed. trunk will insert this from the public-url option -->
     <base data-trunk-public-url />
 
@@ -122,6 +122,8 @@
         <p style="font-size:16px">
             Loading…
         </p>
+        <progress id="progress" max="100" value="0"></progress>
+        <br />
         <div class="lds-dual-ring"></div>
     </div>
 
