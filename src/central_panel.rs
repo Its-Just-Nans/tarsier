@@ -52,10 +52,12 @@ impl TarsierApp {
                         TextureOptions::NEAREST,
                     )
                 });
-                let response = ui.add(
-                    Image::new((image_texture.id(), image_texture.size_vec2()))
-                        .sense(Sense::click_and_drag()),
-                );
+                let image = Image::new((image_texture.id(), image_texture.size_vec2()));
+                let response = ui.add(if matches!(self.mode.current, EditMode::Cursor) {
+                    image.sense(Sense::click())
+                } else {
+                    image.sense(Sense::click_and_drag())
+                });
                 let response = if matches!(self.mode.current, EditMode::ColorSelection) {
                     response.on_hover_cursor(egui::CursorIcon::Crosshair)
                 } else {
