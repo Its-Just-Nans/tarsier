@@ -60,6 +60,17 @@ impl DocumentTrait for Document {
     fn set_path(&mut self, new_path: PathBuf) {
         self.filename = new_path;
     }
+    fn deep_clone(&self) -> Self {
+        Self {
+            img: self.img.clone(),
+            saved_img: self.saved_img.clone(),
+            texture: None,
+            exif: None,
+            filename: self.filename.clone(),
+            selection: self.selection.clone(),
+            scene_rect: self.scene_rect,
+        }
+    }
 }
 
 impl Document {
