@@ -261,7 +261,7 @@ impl TarsierApp {
     /// show the new image modal
     pub(crate) fn show_new_image_modal(&mut self, ui: &mut egui::Ui) {
         if self.settings.new_image.is_open {
-            let modal = Modal::new(Id::new("Modal new image")).show(ui.ctx(), |ui| {
+            let modal = Modal::new(Id::unique("modal_new_image")).show(ui.ctx(), |ui| {
                 ui.label("Create a new image");
                 ui.horizontal(|ui| {
                     ui.label("Width");
