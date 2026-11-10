@@ -52,6 +52,8 @@ impl Default for Resize {
 pub(crate) struct ImageOperations {
     /// Blur value
     pub(crate) blur: f32,
+    /// Pixelate value
+    pub(crate) pixelate: u32,
     /// Hue rotation value
     pub(crate) hue_rotation: i32,
     /// Brighten value
@@ -74,6 +76,7 @@ impl Default for ImageOperations {
     fn default() -> Self {
         Self {
             blur: 10.0,
+            pixelate: 20,
             hue_rotation: 50,
             brighten: 50,
             contrast: 1.0,
@@ -283,6 +286,19 @@ impl TarsierApp {
             let blur = self.image_operations.blur;
             self.apply_op(|img| img.blur(blur), error_manager);
         }
+        if ui.available_width() > 205.0 {
+            ui.add(egui::Slider::new(
+                &mut self.image_operations.pixelate,
+                1..=100,
+            ));
+        } else {
+            ui.add(egui::DragValue::new(&mut self.image_operations.pixelate).range(1..=100));
+        }
+        if ui.button("Pixelate").clicked() {
+            let pixel_size = self.image_operations.pixelate;
+            self.apply_op(|img| pixelate(img, pixel_size), error_manager);
+        }
+
         ui.separator();
         if ui.available_width() > 205.0 {
             ui.add(egui::Slider::new(
@@ -628,6 +644,18 @@ impl TarsierApp {
         }
         self.updated_image();
     }
+}
+
+/// pixelate the iamge
+fn pixelate(img: &DynamicImage, pixel_size: u32) -> DynamicImage {
+    let (width, height) = img.dimensions();
+
+    let small_width = (width / pixel_size).max(1);
+    let small_height = (height / pixel_size).max(1);
+
+    let small = img.resize_exact(small_width, small_height, FilterType::Nearest);
+
+    small.resize_exact(width, height, FilterType::Nearest)
 }
 
 /// draw a single point
