@@ -646,7 +646,7 @@ impl TarsierApp {
     }
 }
 
-/// pixelate the iamge
+/// pixelate the image
 fn pixelate(img: &DynamicImage, pixel_size: u32) -> DynamicImage {
     let (width, height) = img.dimensions();
 
