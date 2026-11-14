@@ -221,7 +221,11 @@ impl BladvakApp<'_> for TarsierApp {
         true
     }
 
-    fn handle_file(&mut self, file: File, _error_manager: &mut ErrorManager) -> Result<(), AppError> {
+    fn handle_file(
+        &mut self,
+        file: File,
+        _error_manager: &mut ErrorManager,
+    ) -> Result<(), AppError> {
         let img_reader = ImageReader::new(Cursor::new(&file.data)).with_guessed_format()?;
         let img = match img_reader.decode() {
             Ok(img) => img,
