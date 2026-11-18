@@ -1,7 +1,7 @@
 //! Tarsier App
 use bladvak::{
     File,
-    app::BladvakApp,
+    app::{BladvakApp, BladvakPanel},
     errors::{AppError, ErrorManager},
     utils::BladvakClipBoard,
 };
@@ -207,13 +207,16 @@ impl TarsierApp {
 impl BladvakApp<'_> for TarsierApp {
     fn panel_list(&self) -> Vec<Box<dyn bladvak::app::BladvakPanel<App = Self>>> {
         vec![
-            Box::new(ImageInfo),
-            Box::new(ImageOperationsPanel),
-            Box::new(CursorInfo),
+            Box::new(ImageInfo::default()),
+            Box::new(ImageOperationsPanel::default()),
+            Box::new(CursorInfo::default()),
         ]
     }
 
-    fn is_side_panel(&self) -> bool {
+    fn is_side_panel(
+        &self,
+        _panel_list: &mut [std::boxed::Box<dyn BladvakPanel<App = Self>>],
+    ) -> bool {
         self.documents.is_some()
     }
 
@@ -249,7 +252,12 @@ impl BladvakApp<'_> for TarsierApp {
         self.app_menu_file(ui, error_manager);
     }
 
-    fn central_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
+    fn central_panel(
+        &mut self,
+        ui: &mut egui::Ui,
+        error_manager: &mut ErrorManager,
+        _panel_list: &mut [std::boxed::Box<dyn BladvakPanel<App = Self>>],
+    ) {
         self.app_central_panel(ui, error_manager);
         self.show_new_image_modal(ui);
     }

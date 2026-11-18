@@ -1,19 +1,32 @@
 //! Tarsier Panels
 use std::path::PathBuf;
 
-use bladvak::{app::BladvakPanel, eframe::egui, utils::grid::Grid};
+use bladvak::{
+    app::{BladvakPanel, PanelState},
+    eframe::egui,
+    utils::grid::Grid,
+};
 
 use crate::TarsierApp;
 
 /// Panel for image operations
-#[derive(Debug)]
-pub(crate) struct ImageOperationsPanel;
+#[derive(Default, Debug)]
+pub(crate) struct ImageOperationsPanel {
+    /// state
+    state: PanelState,
+}
 
 impl BladvakPanel for ImageOperationsPanel {
     type App = TarsierApp;
 
     fn name(&self) -> &'static str {
         "Image operations"
+    }
+    fn state(&self) -> &PanelState {
+        &self.state
+    }
+    fn state_mut(&mut self) -> &mut PanelState {
+        &mut self.state
     }
 
     fn has_settings(&self) -> bool {
@@ -43,14 +56,23 @@ impl BladvakPanel for ImageOperationsPanel {
 }
 
 /// Panel for image information
-#[derive(Debug)]
-pub(crate) struct ImageInfo;
+#[derive(Default, Debug)]
+pub(crate) struct ImageInfo {
+    /// state
+    state: PanelState,
+}
 
 impl BladvakPanel for ImageInfo {
     type App = TarsierApp;
 
     fn name(&self) -> &'static str {
         "Image infos"
+    }
+    fn state(&self) -> &PanelState {
+        &self.state
+    }
+    fn state_mut(&mut self) -> &mut PanelState {
+        &mut self.state
     }
 
     fn has_settings(&self) -> bool {
@@ -95,8 +117,11 @@ impl BladvakPanel for ImageInfo {
 }
 
 /// Panel for cursor operations
-#[derive(Debug)]
-pub(crate) struct CursorInfo;
+#[derive(Default, Debug)]
+pub(crate) struct CursorInfo {
+    /// state
+    state: PanelState,
+}
 
 impl BladvakPanel for CursorInfo {
     type App = TarsierApp;
@@ -125,6 +150,12 @@ impl BladvakPanel for CursorInfo {
     }
     fn name(&self) -> &'static str {
         "Cursor operations"
+    }
+    fn state(&self) -> &PanelState {
+        &self.state
+    }
+    fn state_mut(&mut self) -> &mut PanelState {
+        &mut self.state
     }
 
     fn ui(
