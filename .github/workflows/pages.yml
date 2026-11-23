@@ -24,7 +24,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6 # repo checkout
@@ -38,7 +38,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: Download and install Trunk binary
         run: wget -qO- https://github.com/thedodd/trunk/releases/latest/download/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf-
-      - name: Build # build
+      - name: Build with trunk
         # Environment $public_url resolves to the github project page.
         # If using a user/organization page, remove the `${{ github.event.repository.name }}` part.
         # using --public-url something will allow trunk to modify all the href paths like from favicon.ico to repo_name/favicon.ico .
@@ -53,5 +53,15 @@ jobs:
         uses: actions/upload-pages-artifact@v5
         with:
             path: "dist"
+  # deploy-pages lists artifacts as soon as it starts. In the same job as the
+  # upload, that list is often still empty (actions/deploy-pages#451). A later
+  # job sees the artifact after the upload job has finished.
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-24.04
+    steps:
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v5
