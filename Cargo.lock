@@ -636,14 +636,15 @@ dependencies = [
 
 [[package]]
 name = "bladvak"
-version = "1.7.4"
+version = "1.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18fdeb1abc417220bc25670848175ff229daa90c6d81eff32ba5c9369f9d8223"
+checksum = "9993473092ae305a7ad2d43788068d6b000aa01d68491c7f79380e37cf306b87"
 dependencies = [
  "arboard",
  "eframe",
  "egui_extras",
  "egui_plot",
+ "ehttp",
  "env_logger",
  "image",
  "js-sys",
@@ -1222,8 +1223,15 @@ version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4d1c51126a4e8242c5b3bcd4c5b350ed3540f0c13c10e0c3c840a3833fa3474c"
 dependencies = [
+ "async-channel",
  "document-features",
+ "getrandom 0.4.3",
  "js-sys",
+ "mime",
+ "mime_guess",
+ "rand 0.10.4",
+ "serde",
+ "serde_json",
  "ureq",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -2335,6 +2343,16 @@ name = "mime"
 version = "0.3.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d5848f5a9e8117cf94f2f90faac24a87ff81600ff8628c1e3deaab572e76bfa1"
+
+[[package]]
+name = "mime_guess"
+version = "2.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f7c44f8e672c00fe5308fa235f821cb4198414e1c77935c1ab6948d3fd78550e"
+dependencies = [
+ "mime",
+ "unicase",
+]
 
 [[package]]
 name = "mime_guess2"
