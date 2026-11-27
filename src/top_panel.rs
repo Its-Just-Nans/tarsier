@@ -197,10 +197,31 @@ impl TarsierApp {
 impl Document {
     /// Save the current image
     fn save_image(&mut self, format: ImageFormat, path_file: &Path) -> Result<(), String> {
-        let mut bytes: Vec<u8> = Vec::new();
-        self.img
-            .write_to(&mut Cursor::new(&mut bytes), format)
-            .map_err(|e| format!("Cannot write image: {e}"))?;
+        let mut bytes = Vec::new();
+        if format == ImageFormat::Png {
+            use image::ImageEncoder;
+            use image::codecs::png::{CompressionType, FilterType, PngEncoder};
+
+            let encoder = PngEncoder::new_with_quality(
+                &mut bytes,
+                CompressionType::Default,
+                FilterType::Adaptive,
+            );
+
+            encoder
+                .write_image(
+                    self.img.as_bytes(),
+                    self.img.width(),
+                    self.img.height(),
+                    self.img.color().into(),
+                )
+                .map_err(|e| format!("Cannot write image: {e}"))?;
+        } else {
+            self.img
+                .write_to(&mut Cursor::new(&mut bytes), format)
+                .map_err(|e| format!("Cannot write image: {e}"))?;
+        }
+
         bladvak::utils::save_file(&bytes, path_file)
     }
 }
